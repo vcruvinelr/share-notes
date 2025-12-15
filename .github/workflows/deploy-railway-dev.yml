@@ -24,12 +24,22 @@ jobs:
       - name: Install Railway CLI
         run: |
           npm install -g @railway/cli
+          
+      - name: Verify Railway Token
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "❌ RAILWAY_TOKEN is not set"
+            exit 1
+          fi
+          echo "✅ RAILWAY_TOKEN is set"
 
       - name: Link and Deploy Backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway link ${{ secrets.RAILWAY_PROJECT_ID }} --environment development
+          railway link ${{ secrets.RAILWAY_PROJECT_ID }}
           railway up --service backend --detach
         working-directory: ./backend
 
@@ -37,7 +47,7 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway link ${{ secrets.RAILWAY_PROJECT_ID }} --environment development
+          railway link ${{ secrets.RAILWAY_PROJECT_ID }}
           railway up --service frontend --detach
         working-directory: ./frontend
 

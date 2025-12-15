@@ -101,19 +101,16 @@ Add each service separately in Railway:
 
 ### 3. Get Railway API Token
 
-**Option A: Project Token (Recommended for CI/CD)**
-1. Go to your Railway project
-2. Project Settings → Tokens
-3. Click "Create Token"
-4. Name it `GitHub Actions`
-5. Select scope: `Project Access`
-6. Copy the token
+**IMPORTANT: Use Project Token (Required for CI/CD)**
 
-**Option B: Account Token**
-1. Go to [railway.app/account/tokens](https://railway.app/account/tokens)
-2. Click "Create Token"
-3. Name it `GitHub Actions - ShareNotes Dev`
-4. Copy the token (you won't see it again!)
+1. Go to your Railway project dashboard
+2. Click **Project Settings** (not account settings)
+3. Go to **Tokens** tab
+4. Click "**Create Token**"
+5. Give it a name: `GitHub Actions CI/CD`
+6. **Copy the token immediately** (you won't see it again!)
+
+**⚠️ Do NOT use an Account Token - it won't work for `railway link`**
 
 ### 3.1. Get Railway Project ID
 
@@ -143,13 +140,15 @@ Add each service separately in Railway:
 3. Click "New repository secret"
 4. Add the following secrets:
    
-   **Secret 1:**
+   **Secret 1: RAILWAY_TOKEN**
    - Name: `RAILWAY_TOKEN`
-   - Value: `<paste-your-railway-token>`
+   - Value: `<paste-the-PROJECT-token-from-railway>`
    
-   **Secret 2:**
+   **Secret 2: RAILWAY_PROJECT_ID**
    - Name: `RAILWAY_PROJECT_ID`
    - Value: `<paste-your-railway-project-id>`
+
+**⚠️ CRITICAL:** The `RAILWAY_TOKEN` MUST be a **Project Token**, not an account token. Account tokens will fail with "Unauthorized" error.
 
 ### 5. Create Development Environment (Optional)
 

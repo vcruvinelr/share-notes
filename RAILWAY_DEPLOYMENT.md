@@ -101,6 +101,15 @@ Add each service separately in Railway:
 
 ### 3. Get Railway API Token
 
+**Option A: Project Token (Recommended for CI/CD)**
+1. Go to your Railway project
+2. Project Settings → Tokens
+3. Click "Create Token"
+4. Name it `GitHub Actions`
+5. Select scope: `Project Access`
+6. Copy the token
+
+**Option B: Account Token**
 1. Go to [railway.app/account/tokens](https://railway.app/account/tokens)
 2. Click "Create Token"
 3. Name it `GitHub Actions - ShareNotes Dev`
@@ -112,6 +121,20 @@ Add each service separately in Railway:
 2. Click on Settings (gear icon)
 3. Copy the Project ID (format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
 4. Or run locally: `railway status` (after linking the project)
+
+### 4. Configure Railway Services
+
+**IMPORTANT**: For each service (backend, frontend), configure:
+
+1. In Railway Dashboard → Service Settings:
+   - **Root Directory**: `backend` (for backend) or `frontend` (for frontend)
+   - **Build Method**: Dockerfile
+   - **Dockerfile Path**: `Dockerfile`
+   - **Service Name**: Must match the `--service` flag in GitHub Actions
+     - Backend: `backend`
+     - Frontend: `frontend`
+
+2. Create `.railway/railway.json` in root if using railway link (optional)
 
 ### 4. Add GitHub Secrets
 

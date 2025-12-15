@@ -25,21 +25,19 @@ jobs:
         run: |
           npm install -g @railway/cli
 
-      - name: Deploy Backend
+      - name: Link and Deploy Backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-          RAILWAY_ENVIRONMENT: development
         run: |
+          railway link ${{ secrets.RAILWAY_PROJECT_ID }} --environment development
           railway up --service backend --detach
         working-directory: ./backend
 
-      - name: Deploy Frontend
+      - name: Link and Deploy Frontend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-          RAILWAY_ENVIRONMENT: development
         run: |
+          railway link ${{ secrets.RAILWAY_PROJECT_ID }} --environment development
           railway up --service frontend --detach
         working-directory: ./frontend
 

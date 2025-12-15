@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run frontend linting
+echo "Running frontend lint checks..."
+cd frontend
+npm run lint:fix
+npm run format
+
+# Run backend linting
+echo "Running backend lint checks..."
+cd ../backend
+if command -v poetry &> /dev/null; then
+    poetry run black app/
+    poetry run isort app/
+else
+    echo "Poetry not found, skipping backend linting"
+fi
+
+cd ..

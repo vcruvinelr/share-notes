@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: share-notes
+data:
+  MONGO_INITDB_DATABASE: sharenotes
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: share-notes
+type: Opaque
+stringData:
+  MONGO_INITDB_ROOT_USERNAME: sharenotes
+  MONGO_INITDB_ROOT_PASSWORD: sharenotes_mongodb_password_change_me
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+  namespace: share-notes
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: share-notes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:7
+        ports:
+        - containerPort: 27017
+        envFrom:
+        - configMapRef:
+            name: mongodb-config
+        - secretRef:
+            name: mongodb-secret
+        volumeMounts:
+        - name: mongodb-storage
+          mountPath: /data/db
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: mongodb-storage
+        persistentVolumeClaim:
+          claimName: mongodb-pvc
+      - name: init-script
+        configMap:
+          name: mongodb-init-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: share-notes
+spec:
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init-script
+  namespace: share-notes
+data:
+  init.js: |
+    db = db.getSiblingDB('sharenotes');
+    db.createCollection('note_contents');
+    db.note_contents.createIndex({ "created_at": -1 });
+    db.note_contents.createIndex({ "updated_at": -1 });
+    print('MongoDB initialized successfully');

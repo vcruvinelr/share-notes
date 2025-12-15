@@ -106,14 +106,27 @@ Add each service separately in Railway:
 3. Name it `GitHub Actions - ShareNotes Dev`
 4. Copy the token (you won't see it again!)
 
+### 3.1. Get Railway Project ID
+
+1. Go to your Railway project dashboard
+2. Click on Settings (gear icon)
+3. Copy the Project ID (format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
+4. Or run locally: `railway status` (after linking the project)
+
 ### 4. Add GitHub Secrets
 
 1. Go to your GitHub repository
 2. Settings → Secrets and variables → Actions
 3. Click "New repository secret"
-4. Add:
+4. Add the following secrets:
+   
+   **Secret 1:**
    - Name: `RAILWAY_TOKEN`
    - Value: `<paste-your-railway-token>`
+   
+   **Secret 2:**
+   - Name: `RAILWAY_PROJECT_ID`
+   - Value: `<paste-your-railway-project-id>`
 
 ### 5. Create Development Environment (Optional)
 

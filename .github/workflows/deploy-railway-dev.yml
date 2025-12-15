@@ -28,15 +28,19 @@ jobs:
       - name: Deploy Backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: development
         run: |
-          railway up --service backend --detach --environment development
+          railway up --service backend --detach
         working-directory: ./backend
 
       - name: Deploy Frontend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: development
         run: |
-          railway up --service frontend --detach --environment development
+          railway up --service frontend --detach
         working-directory: ./frontend
 
       - name: Deployment notification

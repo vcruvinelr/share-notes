@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
-from typing import Optional, List
 from datetime import datetime
-from uuid import UUID
 from enum import Enum
+from typing import List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class PermissionLevel(str, Enum):
@@ -39,7 +40,7 @@ class UserResponse(UserBase):
     is_anonymous: bool
     is_premium: bool
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -52,7 +53,7 @@ class SubscriptionResponse(BaseModel):
     current_period_end: Optional[datetime]
     cancel_at_period_end: bool
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -90,7 +91,7 @@ class NoteResponse(BaseModel):
     share_permission_level: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -113,7 +114,7 @@ class NotePermissionResponse(BaseModel):
     permission_level: PermissionLevel
     granted_at: datetime
     user: Optional[UserResponse] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 

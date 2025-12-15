@@ -29,7 +29,7 @@ import {
 } from '@ant-design/icons';
 import { noteService } from '../services/noteService';
 import websocket from '../services/websocket';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import config from '../config';
 import PricingModal from './PricingModal';
 import RichTextEditor from './RichTextEditor';
@@ -46,12 +46,10 @@ import type {
   EditMessage,
 } from '../types';
 
-const { TextArea } = Input;
-
 const NoteEditor = () => {
   const { noteId, shareToken } = useParams<{ noteId?: string; shareToken?: string }>();
   const navigate = useNavigate();
-  const { user, getToken, isDarkMode, loading: authLoading } = useAuth();
+  const { user, getToken, loading: authLoading } = useAuth();
   const { token } = theme.useToken();
   const { message, notification } = App.useApp();
 
@@ -66,23 +64,22 @@ const NoteEditor = () => {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastContentRef = useRef('');
-  
+
   // Get consistent user ID - authenticated takes precedence, anonymous ID set by AuthContext
-  const getUserId = () => {
+  const getUserId = useCallback(() => {
     if (user?.id) return user.id;
     return localStorage.getItem('anonymousUserId') || '';
-  };
-  
+  }, [user?.id]);
+
   const userIdRef = useRef(getUserId());
   const usernameRef = useRef(user?.username || 'Anonymous');
-  
+
   // Update userIdRef when user changes (login/logout)
   useEffect(() => {
     userIdRef.current = getUserId();
     usernameRef.current = user?.username || 'Anonymous';
-  }, [user]);
+  }, [user, getUserId]);
 
   const applyRemoteEdit = useCallback((editData: EditMessage) => {
     console.log('[NoteEditor] Applying remote edit:', editData);
@@ -227,7 +224,7 @@ const NoteEditor = () => {
       websocket.off('user_list', handleUserList);
       websocket.off('error', handleError);
     };
-  }, [applyRemoteEdit]);
+  }, [applyRemoteEdit, isPremium, message, notification]);
 
   useEffect(() => {
     // Wait for auth to complete before initializing
@@ -238,7 +235,7 @@ const NoteEditor = () => {
 
     const initializeNote = async () => {
       console.log('[NoteEditor] initializeNote - user:', user?.id, 'authenticated:', !!user);
-      
+
       if (!user) {
         try {
           const response = await noteService.getCurrentUser();
@@ -284,7 +281,7 @@ const NoteEditor = () => {
         usernameRef.current = user.username || 'User';
         console.log('[NoteEditor] Set authenticated user refs:', {
           userId: userIdRef.current,
-          username: usernameRef.current
+          username: usernameRef.current,
         });
       } else {
         // For anonymous users, ensure we have the ID from localStorage
@@ -294,7 +291,7 @@ const NoteEditor = () => {
           usernameRef.current = 'Anonymous';
           console.log('[NoteEditor] Set anonymous user refs:', {
             userId: userIdRef.current,
-            username: usernameRef.current
+            username: usernameRef.current,
           });
         }
       }
@@ -314,18 +311,18 @@ const NoteEditor = () => {
 
       // Determine write permissions
       let canWrite = false;
-      
+
       if (user && user.id) {
         // Authenticated user - compare both as strings to ensure match
         const userId = String(user.id);
         const ownerId = String(data.owner_id);
-        
+
         console.log('[NoteEditor] Comparing owner:', {
           userId,
           ownerId,
-          match: userId === ownerId
+          match: userId === ownerId,
         });
-        
+
         canWrite =
           userId === ownerId ||
           data.permissions?.some(
@@ -336,7 +333,12 @@ const NoteEditor = () => {
       } else {
         // Anonymous user - use the userId from localStorage/ref
         const anonymousUserId = userIdRef.current;
-        console.log('[NoteEditor] Checking anonymous permissions - anonymousUserId:', anonymousUserId, 'owner_id:', data.owner_id);
+        console.log(
+          '[NoteEditor] Checking anonymous permissions - anonymousUserId:',
+          anonymousUserId,
+          'owner_id:',
+          data.owner_id
+        );
 
         if (data.owner_id === anonymousUserId) {
           canWrite = true;
@@ -354,7 +356,7 @@ const NoteEditor = () => {
           console.log('[NoteEditor] No permission - canWrite: false');
         }
       }
-      
+
       setHasWritePermission(canWrite);
 
       console.log(
@@ -390,7 +392,7 @@ const NoteEditor = () => {
     // Get the latest user ID - don't rely on ref which might be stale
     const currentUserId = user?.id || localStorage.getItem('anonymousUserId') || '';
     const currentUsername = user?.username || 'Anonymous';
-    
+
     const token = getToken();
     console.log('[NoteEditor] WebSocket.connect:', {
       noteId: noteIdToUse,
@@ -458,15 +460,6 @@ const NoteEditor = () => {
       websocket.sendEdit(operation, position, editContent, length);
     } else {
       console.log('[NoteEditor] Non-premium user - edit will be saved on Save button click');
-    }
-  };
-
-  const handleCursorChange = () => {
-    // Only send cursor updates for premium users (real-time collaboration)
-    if (isPremium && textareaRef.current) {
-      const position = textareaRef.current.selectionStart;
-      const selectionEnd = textareaRef.current.selectionEnd;
-      websocket.sendCursor(position, selectionEnd);
     }
   };
 
@@ -702,10 +695,11 @@ const ShareNoteForm = ({ onClose, noteId }: { onClose: () => void; noteId?: stri
 
       onClose();
       form.resetFields();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: { detail?: string } } };
       console.error('Error sharing note:', error);
-      if (error.response?.status === 403) {
-        const errorMsg = error.response?.data?.detail || 'Failed to share note';
+      if (err.response?.status === 403) {
+        const errorMsg = err.response?.data?.detail || 'Failed to share note';
         if (errorMsg.includes('premium') || errorMsg.includes('Team sharing')) {
           setShowPremiumWarning(true);
         } else {

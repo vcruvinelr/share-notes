@@ -1,20 +1,8 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import { useState, useEffect, ReactNode, useMemo } from 'react';
 import Keycloak from 'keycloak-js';
 import config from '../config';
 import type { User } from '../types';
-
-interface AuthContextType {
-  authenticated: boolean;
-  user: User | null;
-  loading: boolean;
-  isDarkMode: boolean;
-  login: () => void;
-  logout: () => void;
-  toggleTheme: () => void;
-  getToken: () => string | undefined;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
+import { AuthContext, AuthContextType } from './AuthContextDefinition';
 
 console.log('Keycloak config:', {
   url: config.keycloak.url,
@@ -37,7 +25,7 @@ export const AuthProvider = ({ children, isDarkMode, toggleTheme }: AuthProvider
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  console.log('user', user)
+  console.log('user', user);
   useEffect(() => {
     initKeycloak();
   }, []);
@@ -66,10 +54,10 @@ export const AuthProvider = ({ children, isDarkMode, toggleTheme }: AuthProvider
         if (keycloak.token) {
           localStorage.setItem('token', keycloak.token);
         }
-        
+
         // Clear anonymous user data when logging in
         localStorage.removeItem('anonymousUserId');
-        
+
         // Use token claims directly instead of loading profile to avoid CORS issues
         const profile = {
           id: keycloak.subject,
@@ -79,22 +67,22 @@ export const AuthProvider = ({ children, isDarkMode, toggleTheme }: AuthProvider
           lastName: keycloak.tokenParsed.family_name,
         };
         console.log('[Auth] Using token claims for profile:', profile);
-        
+
         // Fetch actual user data from backend (including the real user ID)
         // The backend creates a user with a proper UUID based on email when sub is missing
         let isPremium = false;
         let backendUserId = '';
         try {
           const token = keycloak.token;
-          
+
           console.log('[Auth] Fetching user ID from backend...');
           // Get the actual user ID from backend
           const userResponse = await fetch(`${config.apiUrl}/api/notes/me`, {
             headers: {
-              'Authorization': `Bearer ${token}`
-            }
+              Authorization: `Bearer ${token}`,
+            },
           });
-          
+
           console.log('[Auth] User response status:', userResponse.status, userResponse.ok);
           if (userResponse.ok) {
             const userData = await userResponse.json();
@@ -105,12 +93,12 @@ export const AuthProvider = ({ children, isDarkMode, toggleTheme }: AuthProvider
             const errorText = await userResponse.text();
             console.error('[Auth] Error response:', errorText);
           }
-          
+
           // Fetch premium status
           const response = await fetch(`${config.apiUrl}/api/subscription/note-limit`, {
             headers: {
-              'Authorization': `Bearer ${token}`
-            }
+              Authorization: `Bearer ${token}`,
+            },
           });
           if (response.ok) {
             const data = await response.json();
@@ -119,7 +107,7 @@ export const AuthProvider = ({ children, isDarkMode, toggleTheme }: AuthProvider
         } catch (error) {
           console.error('[Auth] Failed to fetch user data from backend:', error);
         }
-        
+
         console.log('[Auth] Setting user with ID:', backendUserId);
         setUser({
           id: backendUserId || keycloak.subject || '',
@@ -129,7 +117,7 @@ export const AuthProvider = ({ children, isDarkMode, toggleTheme }: AuthProvider
           lastName: profile.lastName,
           is_premium: isPremium,
         });
-        
+
         // Only set loading to false AFTER user data is complete
         setLoading(false);
       } else {
@@ -194,24 +182,19 @@ export const AuthProvider = ({ children, isDarkMode, toggleTheme }: AuthProvider
     return keycloak.token;
   };
 
-  const value: AuthContextType = useMemo(() => ({
-    authenticated,
-    user,
-    loading,
-    isDarkMode,
-    login,
-    logout,
-    toggleTheme,
-    getToken,
-  }), [authenticated, user, loading, isDarkMode, toggleTheme]);
+  const value: AuthContextType = useMemo(
+    () => ({
+      authenticated,
+      user,
+      loading,
+      isDarkMode,
+      login,
+      logout,
+      toggleTheme,
+      getToken,
+    }),
+    [authenticated, user, loading, isDarkMode, toggleTheme]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

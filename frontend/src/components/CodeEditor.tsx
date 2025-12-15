@@ -1,7 +1,7 @@
 import Editor from '@monaco-editor/react';
 import { Select, Space, Typography, theme } from 'antd';
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 
 const { Text } = Typography;
 
@@ -23,17 +23,25 @@ const CodeEditor = ({ content, onChange, readOnly = false }: CodeEditorProps) =>
   }, [isDarkMode]);
 
   return (
-    <div style={{ border: `1px solid ${token.colorBorder}`, borderRadius: token.borderRadius, overflow: 'hidden' }}>
+    <div
+      style={{
+        border: `1px solid ${token.colorBorder}`,
+        borderRadius: token.borderRadius,
+        overflow: 'hidden',
+      }}
+    >
       {/* Editor Controls */}
       {!readOnly && (
-        <div style={{ 
-          padding: '8px 12px', 
-          borderBottom: `1px solid ${token.colorBorder}`,
-          backgroundColor: token.colorBgContainer,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
+        <div
+          style={{
+            padding: '8px 12px',
+            borderBottom: `1px solid ${token.colorBorder}`,
+            backgroundColor: token.colorBgContainer,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Space>
             <Text strong>Language:</Text>
             <Select

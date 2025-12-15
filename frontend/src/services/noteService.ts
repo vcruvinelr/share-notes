@@ -9,7 +9,12 @@ import type {
 
 export const noteService = {
   // Get current user info (creates anonymous user if needed)
-  getCurrentUser: async (): Promise<{ id: string; username: string; email: string | null; is_anonymous: boolean }> => {
+  getCurrentUser: async (): Promise<{
+    id: string;
+    username: string;
+    email: string | null;
+    is_anonymous: boolean;
+  }> => {
     const response = await api.get('/api/notes/me');
     return response.data;
   },
@@ -44,10 +49,7 @@ export const noteService = {
   },
 
   // Share a note
-  shareNote: async (
-    noteId: string,
-    shareData: ShareNoteRequest
-  ): Promise<ShareNoteResponse> => {
+  shareNote: async (noteId: string, shareData: ShareNoteRequest): Promise<ShareNoteResponse> => {
     const response = await api.post<ShareNoteResponse>(`/api/notes/${noteId}/share`, shareData);
     return response.data;
   },

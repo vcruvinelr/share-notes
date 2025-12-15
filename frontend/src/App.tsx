@@ -1,7 +1,26 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider, Layout, Button, Typography, Space, Avatar, Dropdown, Switch, App as AntApp, theme as antdTheme } from 'antd';
-import { LoginOutlined, LogoutOutlined, UserOutlined, MoonOutlined, SunOutlined, FileTextOutlined } from '@ant-design/icons';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import {
+  ConfigProvider,
+  Layout,
+  Button,
+  Typography,
+  Space,
+  Avatar,
+  Dropdown,
+  Switch,
+  App as AntApp,
+  theme as antdTheme,
+} from 'antd';
+import {
+  LoginOutlined,
+  LogoutOutlined,
+  UserOutlined,
+  MoonOutlined,
+  SunOutlined,
+  FileTextOutlined,
+} from '@ant-design/icons';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/useAuth';
 import NoteList from './components/NoteList';
 import NoteEditor from './components/NoteEditor';
 import config from './config';
@@ -35,17 +54,19 @@ const Header = () => {
     : [];
 
   return (
-    <AntHeader style={{ 
-      background: isDarkMode ? '#001529' : '#fff',
-      padding: '0 24px', 
-      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    }}>
+    <AntHeader
+      style={{
+        background: isDarkMode ? '#001529' : '#fff',
+        padding: '0 24px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
       <Space size="middle">
         <FileTextOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
         <Title level={3} style={{ margin: 0, color: isDarkMode ? '#fff' : '#1890ff' }}>
@@ -69,19 +90,15 @@ const Header = () => {
           <>
             {authenticated ? (
               <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-                <Avatar 
-                  style={{ backgroundColor: '#1890ff', cursor: 'pointer' }} 
+                <Avatar
+                  style={{ backgroundColor: '#1890ff', cursor: 'pointer' }}
                   icon={<UserOutlined />}
                 >
                   {user?.username?.[0]?.toUpperCase()}
                 </Avatar>
               </Dropdown>
             ) : (
-              <Button
-                type="primary"
-                icon={<LoginOutlined />}
-                onClick={login}
-              >
+              <Button type="primary" icon={<LoginOutlined />} onClick={login}>
                 Login
               </Button>
             )}
@@ -94,13 +111,15 @@ const Header = () => {
 
 function AppRoutes() {
   const { isDarkMode } = useAuth();
-  
+
   return (
     <Layout style={{ minHeight: '100vh', background: isDarkMode ? '#000000' : '#f0f2f5' }}>
       <Header />
-      <Content style={{ 
-        background: isDarkMode ? '#000000' : '#f0f2f5',
-      }}>
+      <Content
+        style={{
+          background: isDarkMode ? '#000000' : '#f0f2f5',
+        }}
+      >
         <AntApp>
           <Routes>
             <Route path="/" element={<NoteList />} />

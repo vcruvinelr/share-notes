@@ -54,7 +54,12 @@ class WebSocketService {
       this.emit('disconnected', { type: 'disconnected' });
 
       // Attempt to reconnect
-      if (this.reconnectAttempts < this.maxReconnectAttempts && this.noteId && this.userId && this.username) {
+      if (
+        this.reconnectAttempts < this.maxReconnectAttempts &&
+        this.noteId &&
+        this.userId &&
+        this.username
+      ) {
         setTimeout(() => {
           this.reconnectAttempts++;
           console.log(`Reconnecting... Attempt ${this.reconnectAttempts}`);

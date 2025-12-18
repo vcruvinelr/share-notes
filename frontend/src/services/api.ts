@@ -22,12 +22,15 @@ api.interceptors.request.use(
         config.headers['X-Anonymous-User-Id'] = anonymousId;
       }
     }
-    
+
     // Debug: log what we're sending
     console.log('[API] Request to:', config.url);
-    console.log('[API] Auth header:', config.headers.Authorization ? 'Bearer token present' : 'None');
+    console.log(
+      '[API] Auth header:',
+      config.headers.Authorization ? 'Bearer token present' : 'None'
+    );
     console.log('[API] Anonymous ID:', config.headers['X-Anonymous-User-Id'] || 'None');
-    
+
     return config;
   },
   (error) => {

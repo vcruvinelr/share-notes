@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Card,
@@ -27,7 +27,7 @@ import {
 } from '@ant-design/icons';
 import { noteService } from '../services/noteService';
 import { subscriptionService } from '../services/subscriptionService';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import PricingModal from './PricingModal';
 import config from '../config';
 import type { Note } from '../types';
@@ -38,42 +38,47 @@ const NoteList = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  
+
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [noteType, setNoteType] = useState<'standard' | 'code'>('standard');
   const [creating, setCreating] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
-  const [noteLimit, setNoteLimit] = useState<any>(null);
-  
+  const [noteLimit, setNoteLimit] = useState<{
+    note_count: number;
+    limit: number;
+    can_create_more: boolean;
+    is_premium: boolean;
+  } | null>(null);
+
   // Get consistent anonymous user ID from localStorage (set by AuthContext)
-  const getAnonymousUserId = () => {
+  const getAnonymousUserId = useCallback(() => {
     if (user?.id) return null; // Authenticated user, no anonymous ID
     return localStorage.getItem('anonymousUserId');
-  };
-  
+  }, [user]);
+
   const [anonymousUserId, setAnonymousUserId] = useState<string | null>(getAnonymousUserId());
 
   useEffect(() => {
     // Always reload notes and limits when component mounts or location changes
     loadNotes();
     loadNoteLimit();
-    
+
     // Update anonymous user ID based on auth state
     if (!user) {
       const anonId = getAnonymousUserId();
       setAnonymousUserId(anonId);
-      
+
       // Verify anonymous user exists in backend
-      noteService.getCurrentUser().catch(error => {
+      noteService.getCurrentUser().catch((error) => {
         console.error('Error verifying anonymous user:', error);
       });
     } else {
       // Clear anonymous ID when authenticated
       setAnonymousUserId(null);
     }
-  }, [user, location.key]); // Reload when location.key changes (navigation)
+  }, [user, location.key, getAnonymousUserId]); // Reload when location.key changes (navigation)
 
   const loadNotes = async () => {
     try {
@@ -124,9 +129,10 @@ const NoteList = () => {
       if (config.features.enableSubscriptions) {
         loadNoteLimit(); // Refresh limit only if subscriptions are enabled
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating note:', error);
-      if (config.features.enableSubscriptions && error.response?.status === 403) {
+      const err = error as { response?: { status?: number } };
+      if (config.features.enableSubscriptions && err.response?.status === 403) {
         setPricingModalOpen(true);
       } else {
         message.error('Failed to create note');
@@ -140,9 +146,10 @@ const NoteList = () => {
     try {
       const { checkout_url } = await subscriptionService.createCheckoutSession();
       window.location.href = checkout_url;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upgrade error:', error);
-      if (error.response?.status === 403) {
+      const err = error as { response?: { status?: number } };
+      if (err.response?.status === 403) {
         message.error('Please sign in to upgrade to premium');
       } else {
         message.error('Failed to start upgrade process');
@@ -215,7 +222,7 @@ const NoteList = () => {
                       <Text>Upgrade to Premium for unlimited notes and premium features!</Text>
                     ) : (
                       <Text type="danger">
-                        You've reached the free plan limit. Upgrade to create more notes.
+                        You&apos;ve reached the free plan limit. Upgrade to create more notes.
                       </Text>
                     )}
                   </div>

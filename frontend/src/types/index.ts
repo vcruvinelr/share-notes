@@ -104,7 +104,6 @@ export interface ErrorMessage extends WebSocketMessage {
   message: string;
   code?: string;
 }
-}
 
 export interface CursorPosition {
   username: string;

@@ -1,6 +1,7 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
 from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import declarative_base
+
 from app.config import settings
 
 # PostgreSQL
@@ -24,19 +25,19 @@ Base = declarative_base()
 # MongoDB
 class MongoDatabase:
     client: AsyncIOMotorClient = None
-    
+
     def __init__(self):
         self.client = None
         self.db = None
-    
+
     async def connect(self):
         self.client = AsyncIOMotorClient(settings.MONGODB_URL)
         self.db = self.client[settings.MONGODB_DB_NAME]
-        
+
     async def disconnect(self):
         if self.client:
             self.client.close()
-    
+
     def get_collection(self, collection_name: str):
         return self.db[collection_name]
 

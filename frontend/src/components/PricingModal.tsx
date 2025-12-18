@@ -1,7 +1,6 @@
 import { Modal, Typography, Button, Space, Card, Tag, List } from 'antd';
 import { CrownOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import api from '../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -47,40 +46,34 @@ const PricingModal = ({ open, onClose, onUpgrade }: PricingModalProps) => {
   };
 
   return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={800}
-      centered
-    >
+    <Modal open={open} onCancel={onClose} footer={null} width={800} centered>
       <Space orientation="vertical" size="large" style={{ width: '100%', padding: '20px 0' }}>
         <div style={{ textAlign: 'center' }}>
           <CrownOutlined style={{ fontSize: '48px', color: '#faad14' }} />
           <Title level={2} style={{ marginTop: '16px', marginBottom: '8px' }}>
             Upgrade to Premium
           </Title>
-          <Paragraph type="secondary">
-            Unlock unlimited notes and premium features
-          </Paragraph>
+          <Paragraph type="secondary">Unlock unlimited notes and premium features</Paragraph>
         </div>
 
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(2, 1fr)', 
-          gap: '24px',
-          marginTop: '24px'
-        }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '24px',
+            marginTop: '24px',
+          }}
+        >
           {/* Free Plan */}
-          <Card
-            hoverable
-            style={{ borderRadius: '12px' }}
-          >
+          <Card hoverable style={{ borderRadius: '12px' }}>
             <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
               <div>
                 <Title level={4}>Free</Title>
                 <Title level={2} style={{ margin: '8px 0' }}>
-                  $0<Text type="secondary" style={{ fontSize: '16px', fontWeight: 'normal' }}>/month</Text>
+                  $0
+                  <Text type="secondary" style={{ fontSize: '16px', fontWeight: 'normal' }}>
+                    /month
+                  </Text>
                 </Title>
               </div>
 
@@ -95,9 +88,7 @@ const PricingModal = ({ open, onClose, onUpgrade }: PricingModalProps) => {
                       ) : (
                         <CloseOutlined style={{ color: '#d9d9d9' }} />
                       )}
-                      <Text type={item.included ? undefined : 'secondary'}>
-                        {item.text}
-                      </Text>
+                      <Text type={item.included ? undefined : 'secondary'}>{item.text}</Text>
                     </Space>
                   </List.Item>
                 )}
@@ -112,20 +103,20 @@ const PricingModal = ({ open, onClose, onUpgrade }: PricingModalProps) => {
           {/* Premium Plan */}
           <Card
             hoverable
-            style={{ 
+            style={{
               borderRadius: '12px',
               border: '2px solid #1890ff',
-              position: 'relative'
+              position: 'relative',
             }}
           >
-            <Tag 
-              color="blue" 
-              style={{ 
-                position: 'absolute', 
-                top: '-12px', 
+            <Tag
+              color="blue"
+              style={{
+                position: 'absolute',
+                top: '-12px',
                 right: '20px',
                 fontSize: '12px',
-                padding: '4px 12px'
+                padding: '4px 12px',
               }}
             >
               RECOMMENDED
@@ -137,7 +128,10 @@ const PricingModal = ({ open, onClose, onUpgrade }: PricingModalProps) => {
                   Premium <CrownOutlined style={{ color: '#faad14' }} />
                 </Title>
                 <Title level={2} style={{ margin: '8px 0' }}>
-                  $3<Text type="secondary" style={{ fontSize: '16px', fontWeight: 'normal' }}>/month</Text>
+                  $3
+                  <Text type="secondary" style={{ fontSize: '16px', fontWeight: 'normal' }}>
+                    /month
+                  </Text>
                 </Title>
               </div>
 
@@ -154,10 +148,10 @@ const PricingModal = ({ open, onClose, onUpgrade }: PricingModalProps) => {
                 )}
               />
 
-              <Button 
-                type="primary" 
-                size="large" 
-                block 
+              <Button
+                type="primary"
+                size="large"
+                block
                 icon={<CrownOutlined />}
                 onClick={handleUpgrade}
                 loading={loading}

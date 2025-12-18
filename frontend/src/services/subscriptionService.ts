@@ -3,7 +3,7 @@ import api from './api';
 export const subscriptionService = {
   async createCheckoutSession() {
     const response = await api.post('/api/subscription/create-checkout-session', {
-      price_id: 'price_premium_monthly'
+      price_id: 'price_premium_monthly',
     });
     return response.data;
   },

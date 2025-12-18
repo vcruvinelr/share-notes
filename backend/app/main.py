@@ -1,11 +1,12 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import logging
 
 from app.config import settings
-from app.database import mongo_db, engine, Base
-from app.routes import notes, websocket, subscription
+from app.database import Base, engine, mongo_db
+from app.routes import notes, subscription, websocket
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,16 +20,16 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("Starting application...")
-    
+
     # Connect to MongoDB
     await mongo_db.connect()
     logger.info("Connected to MongoDB")
-    
+
     # Note: Database migrations are handled by Alembic in entrypoint.sh
     logger.info("Database ready (migrations run via Alembic)")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down application...")
     await mongo_db.disconnect()

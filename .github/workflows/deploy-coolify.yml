@@ -1,0 +1,36 @@
+name: Deploy to Coolify
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Coolify
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Coolify
+        run: |
+          curl --request GET '${{ secrets.COOLIFY_WEBHOOK_URL }}' \
+            --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
+
+      - name: Deployment notification
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Deployment triggered successfully!"
+            echo "Check Coolify dashboard for deployment status"
+          else
+            echo "❌ Failed to trigger deployment"
+          fi

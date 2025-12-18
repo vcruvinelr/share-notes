@@ -22,7 +22,7 @@ interface RichTextEditorProps {
 
 const RichTextEditor = ({ content, onChange, readOnly = false }: RichTextEditorProps) => {
   const { token } = theme.useToken();
-  
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -52,7 +52,7 @@ const RichTextEditor = ({ content, onChange, readOnly = false }: RichTextEditorP
 
   if (readOnly) {
     return (
-      <div 
+      <div
         className="tiptap-editor readonly"
         style={{
           padding: '12px',
@@ -69,17 +69,21 @@ const RichTextEditor = ({ content, onChange, readOnly = false }: RichTextEditorP
   }
 
   return (
-    <div style={{ 
-      border: `1px solid ${token.colorBorder}`, 
-      borderRadius: '6px',
-      backgroundColor: token.colorBgContainer,
-    }}>
+    <div
+      style={{
+        border: `1px solid ${token.colorBorder}`,
+        borderRadius: '6px',
+        backgroundColor: token.colorBgContainer,
+      }}
+    >
       {/* Toolbar */}
-      <div style={{ 
-        padding: '8px', 
-        borderBottom: `1px solid ${token.colorBorder}`,
-        backgroundColor: token.colorBgLayout,
-      }}>
+      <div
+        style={{
+          padding: '8px',
+          borderBottom: `1px solid ${token.colorBorder}`,
+          backgroundColor: token.colorBgLayout,
+        }}
+      >
         <Space split={<Divider type="vertical" />}>
           <Space size="small">
             <Button
@@ -107,7 +111,7 @@ const RichTextEditor = ({ content, onChange, readOnly = false }: RichTextEditorP
               type={editor.isActive('code') ? 'primary' : 'default'}
             />
           </Space>
-          
+
           <Space size="small">
             <Button
               size="small"
@@ -162,7 +166,7 @@ const RichTextEditor = ({ content, onChange, readOnly = false }: RichTextEditorP
       </div>
 
       {/* Editor Content */}
-      <div 
+      <div
         className="tiptap-editor"
         style={{
           padding: '12px',

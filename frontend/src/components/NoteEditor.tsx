@@ -311,6 +311,7 @@ const NoteEditor = () => {
 
       // Determine write permissions
       let canWrite = false;
+      const viewerIsPremium = Boolean(user?.is_premium);
 
       if (user && user.id) {
         // Authenticated user - compare both as strings to ensure match
@@ -354,6 +355,25 @@ const NoteEditor = () => {
         } else {
           canWrite = false;
           console.log('[NoteEditor] No permission - canWrite: false');
+        }
+      }
+
+      if (shareToken) {
+        const isOwnerViewingViaShare = user && String(user.id) === String(data.owner_id);
+        const premiumSharingEnabled =
+          config.features.enableSubscriptions &&
+          viewerIsPremium &&
+          ['write', 'admin'].includes(data.share_permission_level || '');
+
+        if (!premiumSharingEnabled) {
+          canWrite = Boolean(isOwnerViewingViaShare);
+          console.log('[NoteEditor] Share link enforced read-only access:', {
+            shareToken,
+            viewerIsPremium,
+            premiumSharingEnabled,
+            isOwnerViewingViaShare,
+            canWrite,
+          });
         }
       }
 

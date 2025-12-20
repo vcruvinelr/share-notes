@@ -43,7 +43,7 @@ async def get_current_user(
     """
     # DEBUG: Check what we received
     auth_header = request.headers.get("Authorization")
-    auth_preview = auth_header[:50] if auth_header else 'None'
+    auth_preview = auth_header[:50] if auth_header else "None"
     print(f"DEBUG: Authorization header: {auth_preview}")
     print(f"DEBUG: Credentials object: {credentials}")
 

@@ -23,7 +23,13 @@ def upgrade() -> None:
 
     # Add note_type column with default value
     op.add_column(
-        "notes", sa.Column("note_type", note_type_enum, nullable=False, server_default="standard")
+        "notes",
+        sa.Column(
+            "note_type",
+            note_type_enum,
+            nullable=False,
+            server_default="standard",
+        ),
     )
 
 

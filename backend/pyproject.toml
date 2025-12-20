@@ -41,7 +41,6 @@ mypy = "^1.8.0"
 flake8 = "^7.0.0"
 pre-commit = "^3.6.0"
 types-python-jose = "^3.3.4"
-types-stripe = "^4.0.0"
 
 [tool.black]
 line-length = 79

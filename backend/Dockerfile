@@ -1,5 +1,15 @@
 FROM python:3.11-slim as base
 
+# Declare Coolify build arguments
+ARG COOLIFY_URL
+ARG COOLIFY_FQDN
+ARG SERVICE_FQDN_BACKEND
+ARG SERVICE_FQDN_FRONTEND
+ARG SERVICE_FQDN_KEYCLOAK
+ARG SERVICE_URL_BACKEND
+ARG SERVICE_URL_FRONTEND
+ARG SERVICE_URL_KEYCLOAK
+
 WORKDIR /app
 
 # Install system dependencies
@@ -24,7 +34,7 @@ COPY pyproject.toml poetry.lock* ./
 
 # Development stage
 FROM base as development
-RUN poetry install --no-root
+RUN poetry install --no-root --no-cache || poetry install --no-root
 COPY . .
 ENV PYTHONUNBUFFERED=1
 RUN chmod +x /app/entrypoint.sh

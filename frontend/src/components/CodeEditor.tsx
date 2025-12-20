@@ -106,9 +106,7 @@ const CodeEditor = ({ content, onChange, readOnly = false }: CodeEditorProps) =>
           wordWrap: 'on',
           formatOnPaste: true,
           formatOnType: true,
-          suggest: {
-            enabled: !readOnly,
-          },
+          quickSuggestions: !readOnly,
         }}
       />
     </div>

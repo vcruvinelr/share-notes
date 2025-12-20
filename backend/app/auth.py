@@ -1,7 +1,14 @@
 import uuid
 from typing import Optional
 
-from fastapi import Depends, HTTPException, Request, Response, WebSocket, status
+from fastapi import (
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    WebSocket,
+    status,
+)
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from keycloak import KeycloakOpenID
@@ -11,7 +18,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import User
-from app.schemas import UserCreate
 
 security = HTTPBearer(auto_error=False)
 
@@ -37,17 +43,23 @@ async def get_current_user(
     """
     # DEBUG: Check what we received
     auth_header = request.headers.get("Authorization")
-    print(f"DEBUG: Authorization header: {auth_header[:50] if auth_header else 'None'}")
+    auth_preview = auth_header[:50] if auth_header else "None"
+    print(f"DEBUG: Authorization header: {auth_preview}")
     print(f"DEBUG: Credentials object: {credentials}")
 
     # Priority 1: Check for JWT token first (authenticated users)
     if credentials:
         token = credentials.credentials
-        print(f"DEBUG: Processing JWT token for authentication")
+        print("DEBUG: Processing JWT token for authentication")
 
         try:
             # Decode JWT token
-            KEYCLOAK_PUBLIC_KEY = f"-----BEGIN PUBLIC KEY-----\n{keycloak_openid.public_key()}\n-----END PUBLIC KEY-----"
+            pub_key = keycloak_openid.public_key()
+            KEYCLOAK_PUBLIC_KEY = (
+                f"-----BEGIN PUBLIC KEY-----\n"
+                f"{pub_key}\n"
+                f"-----END PUBLIC KEY-----"
+            )
 
             # First decode without verification to see what's in the token
             import base64
@@ -60,7 +72,9 @@ async def get_current_user(
                 padding = len(payload_part) % 4
                 if padding:
                     payload_part += "=" * (4 - padding)
-                decoded_payload = json.loads(base64.urlsafe_b64decode(payload_part))
+                decoded_payload = json.loads(
+                    base64.urlsafe_b64decode(payload_part)
+                )
                 print(f"DEBUG: Raw JWT payload: {decoded_payload}")
 
             # Decode with verification, but don't require audience
@@ -68,30 +82,42 @@ async def get_current_user(
                 token,
                 KEYCLOAK_PUBLIC_KEY,
                 algorithms=[settings.JWT_ALGORITHM],
-                options={"verify_aud": False},  # Keycloak tokens might not have audience
+                options={
+                    "verify_aud": False
+                },  # Keycloak tokens might not have audience
             )
 
             keycloak_id: str = payload.get("sub")
             email: str = payload.get("email")
             username: str = payload.get("preferred_username")
 
-            # If sub is missing, use email as unique identifier (Keycloak fallback)
+            # If sub is missing, use email as unique identifier
             if keycloak_id is None and email:
                 # Use email as the keycloak_id fallback
                 keycloak_id = f"email:{email}"
-                print(f"DEBUG: No 'sub' claim found, using email as identifier: {keycloak_id}")
+                print(
+                    f"DEBUG: No 'sub' claim found, "
+                    f"using email: {keycloak_id}"
+                )
 
             print(
-                f"DEBUG: JWT decoded - keycloak_id={keycloak_id}, email={email}, username={username}"
+                f"DEBUG: JWT decoded - "
+                f"keycloak_id={keycloak_id}, "
+                f"email={email}, username={username}"
             )
 
             if keycloak_id is None:
                 # Invalid token, fall through to anonymous
-                print("DEBUG: No keycloak_id or email in token, falling back to anonymous")
+                print(
+                    "DEBUG: No keycloak_id or email in token, "
+                    "falling back to anonymous"
+                )
                 pass
             else:
                 # Get or create user
-                result = await db.execute(select(User).where(User.keycloak_id == keycloak_id))
+                result = await db.execute(
+                    select(User).where(User.keycloak_id == keycloak_id)
+                )
                 user = result.scalar_one_or_none()
 
                 if not user:
@@ -106,14 +132,17 @@ async def get_current_user(
                     try:
                         await db.commit()
                         await db.refresh(user)
-                    except Exception as e:
-                        # Handle duplicate email/username - user might exist with different keycloak_id
+                    except Exception:
+                        # Handle duplicate - user exists with different ID
                         await db.rollback()
-                        print(f"DEBUG: Error creating user, checking if user exists by email: {e}")
+                        print("DEBUG: Error, checking by email")
                         # Try to find by email instead
                         if email:
                             result = await db.execute(
-                                select(User).where(User.email == email, User.is_anonymous == False)
+                                select(User).where(
+                                    User.email == email,
+                                    User.is_anonymous is False,
+                                )
                             )
                             user = result.scalar_one_or_none()
                         if user:
@@ -147,7 +176,9 @@ async def get_current_user(
         try:
             user_uuid = uuid.UUID(anonymous_user_id)
             result = await db.execute(
-                select(User).where(User.id == user_uuid, User.is_anonymous == True)
+                select(User).where(
+                    User.id == user_uuid, User.is_anonymous is True
+                )
             )
             user = result.scalar_one_or_none()
             if user:
@@ -159,7 +190,9 @@ async def get_current_user(
     return None
 
 
-async def get_current_user_required(user: Optional[User] = Depends(get_current_user)) -> User:
+async def get_current_user_required(
+    user: Optional[User] = Depends(get_current_user),
+) -> User:
     """
     Require authenticated user.
     """
@@ -171,7 +204,9 @@ async def get_current_user_required(user: Optional[User] = Depends(get_current_u
     return user
 
 
-async def get_or_create_anonymous_user(db: AsyncSession, user_id: Optional[str] = None) -> User:
+async def get_or_create_anonymous_user(
+    db: AsyncSession, user_id: Optional[str] = None
+) -> User:
     """
     Create an anonymous user for unauthenticated access.
     If user_id is provided from frontend, use it to maintain consistency.
@@ -181,7 +216,9 @@ async def get_or_create_anonymous_user(db: AsyncSession, user_id: Optional[str] 
             user_uuid = uuid.UUID(user_id)
             # Check if user already exists
             result = await db.execute(
-                select(User).where(User.id == user_uuid, User.is_anonymous == True)
+                select(User).where(
+                    User.id == user_uuid, User.is_anonymous is True
+                )
             )
             existing_user = result.scalar_one_or_none()
             if existing_user:
@@ -208,14 +245,16 @@ async def get_or_create_anonymous_user(db: AsyncSession, user_id: Optional[str] 
         await db.commit()
         await db.refresh(user)
         return user
-    except Exception as e:
+    except Exception:
         # Handle race condition: user was created between check and insert
         await db.rollback()
         if user_id:
             try:
                 user_uuid = uuid.UUID(user_id)
                 result = await db.execute(
-                    select(User).where(User.id == user_uuid, User.is_anonymous == True)
+                    select(User).where(
+                        User.id == user_uuid, User.is_anonymous is True
+                    )
                 )
                 existing_user = result.scalar_one_or_none()
                 if existing_user:
@@ -226,7 +265,9 @@ async def get_or_create_anonymous_user(db: AsyncSession, user_id: Optional[str] 
 
 
 async def get_current_user_ws(
-    websocket: WebSocket, token: Optional[str] = None, db: AsyncSession = Depends(get_db)
+    websocket: WebSocket,
+    token: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
 ) -> Optional[User]:
     """
     Get current user from WebSocket connection.
@@ -235,8 +276,11 @@ async def get_current_user_ws(
         return None
 
     try:
+        pub_key = keycloak_openid.public_key()
         KEYCLOAK_PUBLIC_KEY = (
-            f"-----BEGIN PUBLIC KEY-----\n{keycloak_openid.public_key()}\n-----END PUBLIC KEY-----"
+            f"-----BEGIN PUBLIC KEY-----\n"
+            f"{pub_key}\n"
+            f"-----END PUBLIC KEY-----"
         )
 
         payload = jwt.decode(
@@ -251,7 +295,9 @@ async def get_current_user_ws(
         if keycloak_id is None:
             return None
 
-        result = await db.execute(select(User).where(User.keycloak_id == keycloak_id))
+        result = await db.execute(
+            select(User).where(User.keycloak_id == keycloak_id)
+        )
         user = result.scalar_one_or_none()
 
         return user

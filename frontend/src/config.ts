@@ -2,7 +2,7 @@ const config = {
   apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8010',
   wsUrl: import.meta.env.VITE_WS_URL || 'ws://localhost:8010',
   keycloak: {
-    url: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
+    url: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8090',
     realm: import.meta.env.VITE_KEYCLOAK_REALM || 'syncpad',
     clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'syncpad-frontend',
   },

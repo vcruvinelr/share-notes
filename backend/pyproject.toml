@@ -42,7 +42,7 @@ flake8 = "^7.0.0"
 pre-commit = "^3.6.0"
 
 [tool.black]
-line-length = 100
+line-length = 79
 target-version = ['py311']
 include = '\.pyi?$'
 extend-exclude = '''
@@ -62,7 +62,7 @@ extend-exclude = '''
 
 [tool.isort]
 profile = "black"
-line_length = 100
+line_length = 79
 skip_gitignore = true
 known_first_party = ["app"]
 

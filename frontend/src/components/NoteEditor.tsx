@@ -677,7 +677,14 @@ const NoteEditor = () => {
         <ShareNoteForm onClose={() => setShowShareModal(false)} noteId={noteId} />
       </Modal>
 
-      <PricingModal open={showPricingModal} onClose={() => setShowPricingModal(false)} />
+      <PricingModal
+        open={showPricingModal}
+        onClose={() => setShowPricingModal(false)}
+        onUpgrade={() => {
+          setShowPricingModal(false);
+          message.info('Upgrade functionality coming soon!');
+        }}
+      />
     </div>
   );
 };

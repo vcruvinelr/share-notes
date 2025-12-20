@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import Base, engine, mongo_db
+from app.database import engine, mongo_db
 from app.routes import notes, subscription, websocket
 
 # Configure logging
@@ -56,7 +56,9 @@ app.add_middleware(
 # Include routers
 app.include_router(notes.router)
 app.include_router(websocket.router)
-app.include_router(subscription.router, prefix="/api/subscription", tags=["subscription"])
+app.include_router(
+    subscription.router, prefix="/api/subscription", tags=["subscription"]
+)
 
 
 @app.get("/")

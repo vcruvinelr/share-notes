@@ -75,7 +75,8 @@ async def create_note(
     current_user: Optional[User] = Depends(get_current_user),
 ):
     """
-    Create a new note. Anonymous users create private (non-public) notes by default.  # noqa: E501
+    Create a new note.
+    Anonymous users create private (non-public) notes by default.
     """
     # Get or create anonymous user if not authenticated
     is_new_anonymous = False
@@ -199,7 +200,8 @@ async def list_notes(
             .limit(limit)
         )
     else:
-        # Authenticated users see their notes and shared notes, but EXCLUDE anonymous user notes  # noqa: E501
+        # Authenticated users see their notes and shared notes,
+        # but EXCLUDE anonymous user notes
         result = await db.execute(
             select(Note)
             .join(User, Note.owner_id == User.id)

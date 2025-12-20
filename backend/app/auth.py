@@ -43,9 +43,8 @@ async def get_current_user(
     """
     # DEBUG: Check what we received
     auth_header = request.headers.get("Authorization")
-    print(
-        f"DEBUG: Authorization header: {auth_header[:50] if auth_header else 'None'}"  # noqa: E501
-    )
+    auth_preview = auth_header[:50] if auth_header else 'None'
+    print(f"DEBUG: Authorization header: {auth_preview}")
     print(f"DEBUG: Credentials object: {credentials}")
 
     # Priority 1: Check for JWT token first (authenticated users)
@@ -55,7 +54,12 @@ async def get_current_user(
 
         try:
             # Decode JWT token
-            KEYCLOAK_PUBLIC_KEY = f"-----BEGIN PUBLIC KEY-----\n{keycloak_openid.public_key()}\n-----END PUBLIC KEY-----"  # noqa: E501
+            pub_key = keycloak_openid.public_key()
+            KEYCLOAK_PUBLIC_KEY = (
+                f"-----BEGIN PUBLIC KEY-----\n"
+                f"{pub_key}\n"
+                f"-----END PUBLIC KEY-----"
+            )
 
             # First decode without verification to see what's in the token
             import base64
@@ -91,17 +95,22 @@ async def get_current_user(
             if keycloak_id is None and email:
                 # Use email as the keycloak_id fallback
                 keycloak_id = f"email:{email}"
-                msg = f"No 'sub' claim found, using email: {keycloak_id}"  # noqa: E501
-                print(f"DEBUG: {msg}")
+                print(
+                    f"DEBUG: No 'sub' claim found, "
+                    f"using email: {keycloak_id}"
+                )
 
             print(
-                f"DEBUG: JWT decoded - keycloak_id={keycloak_id}, email={email}, username={username}"  # noqa: E501
+                f"DEBUG: JWT decoded - "
+                f"keycloak_id={keycloak_id}, "
+                f"email={email}, username={username}"
             )
 
             if keycloak_id is None:
                 # Invalid token, fall through to anonymous
                 print(
-                    "DEBUG: No keycloak_id or email in token, falling back to anonymous"  # noqa: E501
+                    "DEBUG: No keycloak_id or email in token, "
+                    "falling back to anonymous"
                 )
                 pass
             else:
@@ -267,7 +276,12 @@ async def get_current_user_ws(
         return None
 
     try:
-        KEYCLOAK_PUBLIC_KEY = f"-----BEGIN PUBLIC KEY-----\n{keycloak_openid.public_key()}\n-----END PUBLIC KEY-----"  # noqa: E501
+        pub_key = keycloak_openid.public_key()
+        KEYCLOAK_PUBLIC_KEY = (
+            f"-----BEGIN PUBLIC KEY-----\n"
+            f"{pub_key}\n"
+            f"-----END PUBLIC KEY-----"
+        )
 
         payload = jwt.decode(
             token,

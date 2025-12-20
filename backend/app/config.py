@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = (
         "postgresql://syncpad:syncpad_dev_password@localhost:5432/syncpad"
     )
-    MONGODB_URL: str = "mongodb://syncpad:syncpad_dev_password@localhost:27017/syncpad?authSource=admin"  # noqa: E501
+    MONGODB_URL: str = (
+        "mongodb://syncpad:syncpad_dev_password@localhost:27017/"
+        "syncpad?authSource=admin"
+    )
     MONGODB_DB_NAME: str = "syncpad"
 
     # Redis

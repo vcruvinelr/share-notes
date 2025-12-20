@@ -10,7 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Note, Subscription, SubscriptionStatus, User
-from app.schemas import CheckoutSessionRequest, CheckoutSessionResponse, SubscriptionResponse
+from app.schemas import (
+    CheckoutSessionRequest,
+    CheckoutSessionResponse,
+    SubscriptionResponse,
+)
 
 router = APIRouter()
 
@@ -21,7 +25,9 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 
-@router.post("/create-checkout-session", response_model=CheckoutSessionResponse)
+@router.post(
+    "/create-checkout-session", response_model=CheckoutSessionResponse
+)
 async def create_checkout_session(
     request: CheckoutSessionRequest,
     current_user: User = Depends(get_current_user),
@@ -30,17 +36,21 @@ async def create_checkout_session(
     """Create a Stripe checkout session for subscription"""
     if current_user.is_anonymous:
         raise HTTPException(
-            status_code=403, detail="Anonymous users cannot subscribe. Please create an account."
+            status_code=403,
+            detail="Anonymous users cannot subscribe. Please create an account.",  # noqa: E501
         )
 
     if current_user.is_premium:
-        raise HTTPException(status_code=400, detail="You already have an active subscription")
+        raise HTTPException(
+            status_code=400, detail="You already have an active subscription"
+        )
 
     try:
         # Create or get Stripe customer
         if not current_user.stripe_customer_id:
             customer = stripe.Customer.create(
-                email=current_user.email, metadata={"user_id": str(current_user.id)}
+                email=current_user.email,
+                metadata={"user_id": str(current_user.id)},
             )
             current_user.stripe_customer_id = customer.id
             await db.commit()
@@ -56,7 +66,7 @@ async def create_checkout_session(
                 }
             ],
             mode="subscription",
-            success_url=f"{FRONTEND_URL}/?success=true&session_id={{CHECKOUT_SESSION_ID}}",
+            success_url=f"{FRONTEND_URL}/?success=true&session_id={{CHECKOUT_SESSION_ID}}",  # noqa: E501
             cancel_url=f"{FRONTEND_URL}/?canceled=true",
             metadata={"user_id": str(current_user.id)},
         )
@@ -65,15 +75,21 @@ async def create_checkout_session(
             checkout_url=checkout_session.url, session_id=checkout_session.id
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create checkout session: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create checkout session: {str(e)}",
+        )
 
 
 @router.get("/subscription", response_model=SubscriptionResponse)
 async def get_subscription(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get current user's subscription status"""
-    result = await db.execute(select(Subscription).where(Subscription.user_id == current_user.id))
+    result = await db.execute(
+        select(Subscription).where(Subscription.user_id == current_user.id)
+    )
     subscription = result.scalar_one_or_none()
 
     if not subscription:
@@ -84,15 +100,23 @@ async def get_subscription(
 
 @router.get("/note-limit")
 async def get_note_limit(
-    current_user: Optional[User] = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: Optional[User] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get note limit information for current user"""
     # If no user (not even anonymous), return default limits
     if current_user is None:
-        return {"note_count": 0, "limit": 3, "can_create_more": True, "is_premium": False}
+        return {
+            "note_count": 0,
+            "limit": 3,
+            "can_create_more": True,
+            "is_premium": False,
+        }
 
     # Count user's notes
-    note_count_query = select(func.count(Note.id)).where(Note.owner_id == current_user.id)
+    note_count_query = select(func.count(Note.id)).where(
+        Note.owner_id == current_user.id
+    )
     result = await db.execute(note_count_query)
     note_count = result.scalar()
 
@@ -110,25 +134,36 @@ async def get_note_limit(
 
 @router.post("/cancel-subscription")
 async def cancel_subscription(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Cancel user's subscription"""
-    result = await db.execute(select(Subscription).where(Subscription.user_id == current_user.id))
+    result = await db.execute(
+        select(Subscription).where(Subscription.user_id == current_user.id)
+    )
     subscription = result.scalar_one_or_none()
 
     if not subscription or not subscription.stripe_subscription_id:
-        raise HTTPException(status_code=404, detail="No active subscription found")
+        raise HTTPException(
+            status_code=404, detail="No active subscription found"
+        )
 
     try:
         # Cancel at period end in Stripe
-        stripe.Subscription.modify(subscription.stripe_subscription_id, cancel_at_period_end=True)
+        stripe.Subscription.modify(
+            subscription.stripe_subscription_id, cancel_at_period_end=True
+        )
 
         subscription.cancel_at_period_end = True
         await db.commit()
 
-        return {"message": "Subscription will be canceled at the end of the billing period"}
+        return {
+            "message": "Subscription will be canceled at the end of the billing period"  # noqa: E501
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to cancel subscription: {str(e)}"
+        )
 
 
 @router.post("/webhook")
@@ -141,7 +176,9 @@ async def stripe_webhook(
     payload = await request.body()
 
     try:
-        event = stripe.Webhook.construct_event(payload, stripe_signature, STRIPE_WEBHOOK_SECRET)
+        event = stripe.Webhook.construct_event(
+            payload, stripe_signature, STRIPE_WEBHOOK_SECRET
+        )
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
     except stripe.error.SignatureVerificationError:
@@ -153,7 +190,9 @@ async def stripe_webhook(
         user_id = session["metadata"]["user_id"]
 
         # Get subscription details from Stripe
-        stripe_subscription = stripe.Subscription.retrieve(session["subscription"])
+        stripe_subscription = stripe.Subscription.retrieve(
+            session["subscription"]
+        )
 
         # Update user
         result = await db.execute(select(User).where(User.id == user_id))
@@ -162,7 +201,9 @@ async def stripe_webhook(
             user.is_premium = True
 
             # Create or update subscription record
-            result = await db.execute(select(Subscription).where(Subscription.user_id == user_id))
+            result = await db.execute(
+                select(Subscription).where(Subscription.user_id == user_id)
+            )
             subscription = result.scalar_one_or_none()
 
             if not subscription:
@@ -170,7 +211,9 @@ async def stripe_webhook(
                 db.add(subscription)
 
             subscription.stripe_subscription_id = stripe_subscription.id
-            subscription.stripe_price_id = stripe_subscription["items"]["data"][0]["price"]["id"]
+            subscription.stripe_price_id = stripe_subscription["items"][
+                "data"
+            ][0]["price"]["id"]
             subscription.status = SubscriptionStatus.ACTIVE
             subscription.current_period_start = datetime.fromtimestamp(
                 stripe_subscription.current_period_start
@@ -178,7 +221,9 @@ async def stripe_webhook(
             subscription.current_period_end = datetime.fromtimestamp(
                 stripe_subscription.current_period_end
             )
-            subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
+            subscription.cancel_at_period_end = (
+                stripe_subscription.cancel_at_period_end
+            )
 
             await db.commit()
 
@@ -193,17 +238,23 @@ async def stripe_webhook(
         subscription = result.scalar_one_or_none()
 
         if subscription:
-            subscription.status = SubscriptionStatus(stripe_subscription.status)
+            subscription.status = SubscriptionStatus(
+                stripe_subscription.status
+            )
             subscription.current_period_start = datetime.fromtimestamp(
                 stripe_subscription.current_period_start
             )
             subscription.current_period_end = datetime.fromtimestamp(
                 stripe_subscription.current_period_end
             )
-            subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
+            subscription.cancel_at_period_end = (
+                stripe_subscription.cancel_at_period_end
+            )
 
             # Update user premium status
-            result = await db.execute(select(User).where(User.id == subscription.user_id))
+            result = await db.execute(
+                select(User).where(User.id == subscription.user_id)
+            )
             user = result.scalar_one_or_none()
             if user:
                 user.is_premium = stripe_subscription.status == "active"
@@ -224,7 +275,9 @@ async def stripe_webhook(
             subscription.status = SubscriptionStatus.CANCELED
 
             # Update user premium status
-            result = await db.execute(select(User).where(User.id == subscription.user_id))
+            result = await db.execute(
+                select(User).where(User.id == subscription.user_id)
+            )
             user = result.scalar_one_or_none()
             if user:
                 user.is_premium = False

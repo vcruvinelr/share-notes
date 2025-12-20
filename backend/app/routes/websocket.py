@@ -27,14 +27,18 @@ class ConnectionManager:
         self.current_content: Dict[str, str] = {}
         self.lock = asyncio.Lock()
 
-    async def connect(self, websocket: WebSocket, note_id: str, user_id: str, username: str):
+    async def connect(
+        self, websocket: WebSocket, note_id: str, user_id: str, username: str
+    ):
         """Connect a user to a note's collaboration session."""
         await websocket.accept()
 
         async with self.lock:
             if note_id not in self.active_connections:
                 self.active_connections[note_id] = set()
-            self.active_connections[note_id].add((websocket, user_id, username))
+            self.active_connections[note_id].add(
+                (websocket, user_id, username)
+            )
 
         # Notify others about new user
         await self.broadcast_to_note(
@@ -51,11 +55,15 @@ class ConnectionManager:
         # Send current user list to the new user
         await self.send_user_list(websocket, note_id)
 
-    async def disconnect(self, websocket: WebSocket, note_id: str, user_id: str, username: str):
+    async def disconnect(
+        self, websocket: WebSocket, note_id: str, user_id: str, username: str
+    ):
         """Disconnect a user from a note's collaboration session."""
         async with self.lock:
             if note_id in self.active_connections:
-                self.active_connections[note_id].discard((websocket, user_id, username))
+                self.active_connections[note_id].discard(
+                    (websocket, user_id, username)
+                )
 
                 if not self.active_connections[note_id]:
                     del self.active_connections[note_id]
@@ -72,7 +80,10 @@ class ConnectionManager:
         )
 
     async def broadcast_to_note(
-        self, note_id: str, message: dict, exclude_websocket: Optional[WebSocket] = None
+        self,
+        note_id: str,
+        message: dict,
+        exclude_websocket: Optional[WebSocket] = None,
     ):
         """Broadcast a message to all users in a note."""
         if note_id not in self.active_connections:
@@ -128,7 +139,9 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-async def verify_note_access(note_id: str, user_id: Optional[str], db: AsyncSession) -> bool:
+async def verify_note_access(
+    note_id: str, user_id: Optional[str], db: AsyncSession
+) -> bool:
     """Verify if a user has access to a note."""
     try:
         from uuid import UUID
@@ -165,7 +178,8 @@ async def verify_note_access(note_id: str, user_id: Optional[str], db: AsyncSess
         # Check permissions
         perm_result = await db.execute(
             select(NotePermission).where(
-                NotePermission.note_id == note_uuid, NotePermission.user_id == user_uuid
+                NotePermission.note_id == note_uuid,
+                NotePermission.user_id == user_uuid,
             )
         )
         permission = perm_result.scalar_one_or_none()
@@ -177,7 +191,9 @@ async def verify_note_access(note_id: str, user_id: Optional[str], db: AsyncSess
         return False
 
 
-async def verify_write_permission(note_id: str, user_id: Optional[str], db: AsyncSession) -> bool:
+async def verify_write_permission(
+    note_id: str, user_id: Optional[str], db: AsyncSession
+) -> bool:
     """Verify if a user has write permission for a note."""
     try:
         from uuid import UUID
@@ -191,7 +207,10 @@ async def verify_write_permission(note_id: str, user_id: Optional[str], db: Asyn
             return False
 
         # Check if note has share_permission_level set to write or admin
-        if note.share_permission_level and note.share_permission_level in ["write", "admin"]:
+        if note.share_permission_level and note.share_permission_level in [
+            "write",
+            "admin",
+        ]:
             return True
 
         if not user_id:
@@ -208,7 +227,9 @@ async def verify_write_permission(note_id: str, user_id: Optional[str], db: Asyn
             select(NotePermission).where(
                 NotePermission.note_id == note_uuid,
                 NotePermission.user_id == user_uuid,
-                NotePermission.permission_level.in_([PermissionLevel.WRITE, PermissionLevel.ADMIN]),
+                NotePermission.permission_level.in_(
+                    [PermissionLevel.WRITE, PermissionLevel.ADMIN]
+                ),
             )
         )
         permission = perm_result.scalar_one_or_none()
@@ -257,7 +278,9 @@ async def websocket_endpoint(
             try:
                 mock_request = MockRequest(token)
                 mock_response = Response()
-                credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+                credentials = HTTPAuthorizationCredentials(
+                    scheme="Bearer", credentials=token
+                )
 
                 # Get user from token
                 authenticated_user = await get_current_user(
@@ -266,7 +289,9 @@ async def websocket_endpoint(
                 if authenticated_user:
                     actual_user_id = str(authenticated_user.id)
                     actual_username = authenticated_user.username or "User"
-                    logger.info(f"WebSocket authenticated via token: user_id={actual_user_id}")
+                    logger.info(
+                        f"WebSocket authenticated via token: user_id={actual_user_id}"  # noqa: E501
+                    )
             except Exception as e:
                 logger.error(f"Error authenticating WebSocket via token: {e}")
 
@@ -283,7 +308,9 @@ async def websocket_endpoint(
             from uuid import UUID
 
             try:
-                user_result = await db.execute(select(User).where(User.id == UUID(actual_user_id)))
+                user_result = await db.execute(
+                    select(User).where(User.id == UUID(actual_user_id))
+                )
                 user = user_result.scalar_one_or_none()
                 if user:
                     is_premium = user.is_premium
@@ -298,7 +325,9 @@ async def websocket_endpoint(
             actual_username = f"Anonymous-{actual_user_id[:8]}"
 
         # Connect to collaboration session
-        await manager.connect(websocket, note_id, actual_user_id, actual_username)
+        await manager.connect(
+            websocket, note_id, actual_user_id, actual_username
+        )
 
         try:
             while True:
@@ -314,13 +343,15 @@ async def websocket_endpoint(
                         await websocket.send_json(
                             {
                                 "type": "error",
-                                "message": "Real-time collaboration requires premium subscription",
+                                "message": "Real-time collaboration requires premium subscription",  # noqa: E501
                             }
                         )
                         continue
 
                     # Verify write permission
-                    has_write = await verify_write_permission(note_id, user_id, db)
+                    has_write = await verify_write_permission(
+                        note_id, user_id, db
+                    )
 
                     if not has_write:
                         await websocket.send_json(
@@ -335,7 +366,9 @@ async def websocket_endpoint(
                     mongo_db = get_mongo_db()
                     from uuid import UUID
 
-                    note_result = await db.execute(select(Note).where(Note.id == UUID(note_id)))
+                    note_result = await db.execute(
+                        select(Note).where(Note.id == UUID(note_id))
+                    )
                     note = note_result.scalar_one_or_none()
 
                     if note:
@@ -369,7 +402,11 @@ async def websocket_endpoint(
                         elif op_type == "delete":
                             current = current[:pos] + current[pos + length :]
                         elif op_type == "replace":
-                            current = current[:pos] + content + current[pos + length :]
+                            current = (
+                                current[:pos]
+                                + content
+                                + current[pos + length :]
+                            )
 
                         manager.current_content[note_id] = current
 
@@ -395,7 +432,7 @@ async def websocket_endpoint(
                         await websocket.send_json(
                             {
                                 "type": "error",
-                                "message": "Real-time collaboration requires premium subscription",
+                                "message": "Real-time collaboration requires premium subscription",  # noqa: E501
                             }
                         )
                         continue
@@ -415,12 +452,14 @@ async def websocket_endpoint(
                     )
 
                 elif message_type == "get_content":
-                    # Always fetch fresh content from MongoDB to avoid stale cache
+                    # Always fetch fresh content from MongoDB to avoid stale cache  # noqa: E501
                     # This is important for free users who save via HTTP PUT
                     mongo_db = get_mongo_db()
                     from uuid import UUID
 
-                    note_result = await db.execute(select(Note).where(Note.id == UUID(note_id)))
+                    note_result = await db.execute(
+                        select(Note).where(Note.id == UUID(note_id))
+                    )
                     note = note_result.scalar_one_or_none()
 
                     content = ""
@@ -431,7 +470,7 @@ async def websocket_endpoint(
 
                         if content_doc:
                             content = content_doc.get("content", "")
-                            # Update in-memory cache for premium users' real-time sync
+                            # Update in-memory cache for premium users' real-time sync  # noqa: E501
                             manager.current_content[note_id] = content
 
                     await websocket.send_json(

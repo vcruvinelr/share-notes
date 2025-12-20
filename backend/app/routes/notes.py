@@ -3,7 +3,14 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -57,7 +64,9 @@ async def get_current_user_info(
     }
 
 
-@router.post("/", response_model=NoteDetailResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=NoteDetailResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_note(
     note_data: NoteCreate,
     request: Request,
@@ -66,7 +75,7 @@ async def create_note(
     current_user: Optional[User] = Depends(get_current_user),
 ):
     """
-    Create a new note. Anonymous users create private (non-public) notes by default.
+    Create a new note. Anonymous users create private (non-public) notes by default.  # noqa: E501
     """
     # Get or create anonymous user if not authenticated
     is_new_anonymous = False
@@ -78,14 +87,16 @@ async def create_note(
 
     # Check note limit for free users
     if not current_user.is_premium:
-        note_count_query = select(func.count(Note.id)).where(Note.owner_id == current_user.id)
+        note_count_query = select(func.count(Note.id)).where(
+            Note.owner_id == current_user.id
+        )
         result = await db.execute(note_count_query)
         note_count = result.scalar()
 
         if note_count >= 3:
             raise HTTPException(
                 status_code=403,
-                detail="Note limit reached. Upgrade to premium for unlimited notes.",
+                detail="Note limit reached. Upgrade to premium for unlimited notes.",  # noqa: E501
             )
 
     # Store content in MongoDB
@@ -129,14 +140,19 @@ async def create_note(
     # Get content from MongoDB using the stored ID
     from bson import ObjectId
 
-    content_doc = await mongo_db.note_contents.find_one({"_id": ObjectId(mongodb_content_id)})
+    content_doc = await mongo_db.note_contents.find_one(
+        {"_id": ObjectId(mongodb_content_id)}
+    )
 
     # Prepare note response data
     note_dict = note.__dict__.copy()
     note_dict["note_type"] = note.note_type.value  # Convert enum to string
 
     return NoteDetailResponse(
-        **note_dict, content=content_doc["content"], owner=current_user, permissions=[]
+        **note_dict,
+        content=content_doc["content"],
+        owner=current_user,
+        permissions=[],
     )
 
 
@@ -173,21 +189,28 @@ async def list_notes(
 
     # Separate data for anonymous vs authenticated users
     # Anonymous users: only see their own notes
-    # Authenticated users: only see notes from other authenticated users (exclude anonymous)
+    # Authenticated users: only see notes from other authenticated users (exclude anonymous)  # noqa: E501
     if current_user.is_anonymous:
         # Anonymous users only see their own notes
         result = await db.execute(
-            select(Note).where(Note.owner_id == current_user.id).offset(skip).limit(limit)
+            select(Note)
+            .where(Note.owner_id == current_user.id)
+            .offset(skip)
+            .limit(limit)
         )
     else:
-        # Authenticated users see their notes and shared notes, but EXCLUDE anonymous user notes
+        # Authenticated users see their notes and shared notes, but EXCLUDE anonymous user notes  # noqa: E501
         result = await db.execute(
             select(Note)
             .join(User, Note.owner_id == User.id)
             .where(
                 (
                     (Note.owner_id == current_user.id)
-                    | (Note.permissions.any(NotePermission.user_id == current_user.id))
+                    | (
+                        Note.permissions.any(
+                            NotePermission.user_id == current_user.id
+                        )
+                    )
                 )
                 & (User.is_anonymous is False)
             )
@@ -226,7 +249,7 @@ async def get_note(
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
 
-    # Enforce separation: anonymous users can't access authenticated user notes and vice versa
+    # Enforce separation: anonymous users can't access authenticated user notes and vice versa  # noqa: E501
     if current_user and note.owner:
         # Prevent authenticated users from accessing anonymous user notes
         if not current_user.is_anonymous and note.owner.is_anonymous:
@@ -239,14 +262,17 @@ async def get_note(
     if not note.is_public:
         # If still no user after trying to create anonymous, deny access
         if current_user is None:
-            raise HTTPException(status_code=403, detail="Authentication required")
+            raise HTTPException(
+                status_code=403, detail="Authentication required"
+            )
 
         # Check if user owns the note
         if note.owner_id != current_user.id:
             # Check if user has permission
             perm_result = await db.execute(
                 select(NotePermission).where(
-                    NotePermission.note_id == note_id, NotePermission.user_id == current_user.id
+                    NotePermission.note_id == note_id,
+                    NotePermission.user_id == current_user.id,
                 )
             )
             permission = perm_result.scalar_one_or_none()
@@ -257,7 +283,9 @@ async def get_note(
     mongo_db = get_mongo_db()
     from bson.objectid import ObjectId
 
-    content_doc = await mongo_db.note_contents.find_one({"_id": ObjectId(note.mongodb_content_id)})
+    content_doc = await mongo_db.note_contents.find_one(
+        {"_id": ObjectId(note.mongodb_content_id)}
+    )
 
     if not content_doc:
         raise HTTPException(status_code=500, detail="Note content not found")
@@ -307,7 +335,7 @@ async def update_note(
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
 
-    # Enforce separation: anonymous users can't modify authenticated user notes and vice versa
+    # Enforce separation: anonymous users can't modify authenticated user notes and vice versa  # noqa: E501
     if current_user and note.owner:
         if not current_user.is_anonymous and note.owner.is_anonymous:
             raise HTTPException(status_code=403, detail="Access denied")
@@ -324,7 +352,9 @@ async def update_note(
             select(NotePermission).where(
                 NotePermission.note_id == note_id,
                 NotePermission.user_id == current_user.id,
-                NotePermission.permission_level.in_([PermissionLevel.WRITE, PermissionLevel.ADMIN]),
+                NotePermission.permission_level.in_(
+                    [PermissionLevel.WRITE, PermissionLevel.ADMIN]
+                ),
             )
         )
         permission = perm_result.scalar_one_or_none()
@@ -336,7 +366,9 @@ async def update_note(
             has_write_permission = True
 
     if not has_write_permission:
-        raise HTTPException(status_code=403, detail="Write permission required")
+        raise HTTPException(
+            status_code=403, detail="Write permission required"
+        )
 
     # Update PostgreSQL metadata
     if note_data.title is not None:
@@ -353,7 +385,12 @@ async def update_note(
 
         await mongo_db.note_contents.update_one(
             {"_id": ObjectId(note.mongodb_content_id)},
-            {"$set": {"content": note_data.content, "updated_at": datetime.utcnow()}},
+            {
+                "$set": {
+                    "content": note_data.content,
+                    "updated_at": datetime.utcnow(),
+                }
+            },
         )
 
         # Clear WebSocket in-memory cache to ensure fresh content is fetched
@@ -367,7 +404,9 @@ async def update_note(
     mongo_db = get_mongo_db()
     from bson.objectid import ObjectId
 
-    content_doc = await mongo_db.note_contents.find_one({"_id": ObjectId(note.mongodb_content_id)})
+    content_doc = await mongo_db.note_contents.find_one(
+        {"_id": ObjectId(note.mongodb_content_id)}
+    )
 
     return NoteDetailResponse(
         id=note.id,
@@ -403,14 +442,16 @@ async def delete_note(
             current_user = await get_or_create_anonymous_user(db, anonymous_id)
 
     result = await db.execute(
-        select(Note).options(selectinload(Note.owner)).where(Note.id == note_id)
+        select(Note)
+        .options(selectinload(Note.owner))
+        .where(Note.id == note_id)
     )
     note = result.scalar_one_or_none()
 
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
 
-    # Enforce separation: anonymous users can't delete authenticated user notes and vice versa
+    # Enforce separation: anonymous users can't delete authenticated user notes and vice versa  # noqa: E501
     if current_user and note.owner:
         if not current_user.is_anonymous and note.owner.is_anonymous:
             raise HTTPException(status_code=403, detail="Access denied")
@@ -424,7 +465,9 @@ async def delete_note(
     mongo_db = get_mongo_db()
     from bson.objectid import ObjectId
 
-    await mongo_db.note_contents.delete_one({"_id": ObjectId(note.mongodb_content_id)})
+    await mongo_db.note_contents.delete_one(
+        {"_id": ObjectId(note.mongodb_content_id)}
+    )
 
     # Delete from PostgreSQL (cascades to permissions)
     await db.delete(note)
@@ -444,7 +487,7 @@ async def share_note(
 ):
     """
     Share a note with another user or generate a share link.
-    Anonymous users can only generate share links, not share with specific users.
+    Anonymous users can only generate share links, not share with specific users.  # noqa: E501
     """
     # Get or create anonymous user if not authenticated
     is_new_anonymous = False
@@ -499,10 +542,12 @@ async def share_note(
         if not current_user.is_premium:
             raise HTTPException(
                 status_code=403,
-                detail="Team sharing requires premium subscription. Use share links instead.",
+                detail="Team sharing requires premium subscription. Use share links instead.",  # noqa: E501
             )
 
-        user_result = await db.execute(select(User).where(User.email == share_data.user_email))
+        user_result = await db.execute(
+            select(User).where(User.email == share_data.user_email)
+        )
         target_user = user_result.scalar_one_or_none()
 
         if not target_user:
@@ -511,7 +556,8 @@ async def share_note(
         # Check if permission already exists
         perm_result = await db.execute(
             select(NotePermission).where(
-                NotePermission.note_id == note_id, NotePermission.user_id == target_user.id
+                NotePermission.note_id == note_id,
+                NotePermission.user_id == target_user.id,
             )
         )
         existing_perm = perm_result.scalar_one_or_none()
@@ -531,7 +577,8 @@ async def share_note(
         # Get the permission with user info
         perm_result = await db.execute(
             select(NotePermission).where(
-                NotePermission.note_id == note_id, NotePermission.user_id == target_user.id
+                NotePermission.note_id == note_id,
+                NotePermission.user_id == target_user.id,
             )
         )
         permission = perm_result.scalar_one()
@@ -563,7 +610,9 @@ async def get_shared_note(
     mongo_db = get_mongo_db()
     from bson.objectid import ObjectId
 
-    content_doc = await mongo_db.note_contents.find_one({"_id": ObjectId(note.mongodb_content_id)})
+    content_doc = await mongo_db.note_contents.find_one(
+        {"_id": ObjectId(note.mongodb_content_id)}
+    )
 
     if not content_doc:
         raise HTTPException(status_code=500, detail="Note content not found")

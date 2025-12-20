@@ -56,7 +56,9 @@ app.add_middleware(
 # Include routers
 app.include_router(notes.router)
 app.include_router(websocket.router)
-app.include_router(subscription.router, prefix="/api/subscription", tags=["subscription"])
+app.include_router(
+    subscription.router, prefix="/api/subscription", tags=["subscription"]
+)
 
 
 @app.get("/")

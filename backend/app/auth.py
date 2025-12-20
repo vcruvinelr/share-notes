@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import User
-from app.schemas import UserCreate
 
 security = HTTPBearer(auto_error=False)
 
@@ -43,7 +42,7 @@ async def get_current_user(
     # Priority 1: Check for JWT token first (authenticated users)
     if credentials:
         token = credentials.credentials
-        print(f"DEBUG: Processing JWT token for authentication")
+        print("DEBUG: Processing JWT token for authentication")
 
         try:
             # Decode JWT token
@@ -113,7 +112,7 @@ async def get_current_user(
                         # Try to find by email instead
                         if email:
                             result = await db.execute(
-                                select(User).where(User.email == email, User.is_anonymous == False)
+                                select(User).where(User.email == email, User.is_anonymous is False)
                             )
                             user = result.scalar_one_or_none()
                         if user:
@@ -147,7 +146,7 @@ async def get_current_user(
         try:
             user_uuid = uuid.UUID(anonymous_user_id)
             result = await db.execute(
-                select(User).where(User.id == user_uuid, User.is_anonymous == True)
+                select(User).where(User.id == user_uuid, User.is_anonymous is True)
             )
             user = result.scalar_one_or_none()
             if user:
@@ -181,7 +180,7 @@ async def get_or_create_anonymous_user(db: AsyncSession, user_id: Optional[str] 
             user_uuid = uuid.UUID(user_id)
             # Check if user already exists
             result = await db.execute(
-                select(User).where(User.id == user_uuid, User.is_anonymous == True)
+                select(User).where(User.id == user_uuid, User.is_anonymous is True)
             )
             existing_user = result.scalar_one_or_none()
             if existing_user:
@@ -208,14 +207,14 @@ async def get_or_create_anonymous_user(db: AsyncSession, user_id: Optional[str] 
         await db.commit()
         await db.refresh(user)
         return user
-    except Exception as e:
+    except Exception:
         # Handle race condition: user was created between check and insert
         await db.rollback()
         if user_id:
             try:
                 user_uuid = uuid.UUID(user_id)
                 result = await db.execute(
-                    select(User).where(User.id == user_uuid, User.is_anonymous == True)
+                    select(User).where(User.id == user_uuid, User.is_anonymous is True)
                 )
                 existing_user = result.scalar_one_or_none()
                 if existing_user:

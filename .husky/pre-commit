@@ -2,19 +2,23 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 # Run frontend linting
-echo "Running frontend lint checks..."
+echo "🔍 Running frontend lint checks..."
 cd frontend
+npm run type-check
 npm run lint:fix
 npm run format
 
 # Run backend linting
-echo "Running backend lint checks..."
+echo "🔍 Running backend lint checks..."
 cd ../backend
 if command -v poetry &> /dev/null; then
     poetry run black app/
     poetry run isort app/
+    poetry run flake8 .
 else
-    echo "Poetry not found, skipping backend linting"
+    echo "⚠️  Poetry not found, skipping backend linting"
 fi
 
 cd ..
+
+echo "✅ Pre-commit checks passed!"

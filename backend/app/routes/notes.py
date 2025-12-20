@@ -15,7 +15,6 @@ from app.routes.websocket import manager
 from app.schemas import (
     NoteCreate,
     NoteDetailResponse,
-    NotePermissionCreate,
     NotePermissionResponse,
     NoteResponse,
     NoteUpdate,
@@ -190,7 +189,7 @@ async def list_notes(
                     (Note.owner_id == current_user.id)
                     | (Note.permissions.any(NotePermission.user_id == current_user.id))
                 )
-                & (User.is_anonymous == False)
+                & (User.is_anonymous is False)
             )
             .offset(skip)
             .limit(limit)

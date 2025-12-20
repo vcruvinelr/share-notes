@@ -5,13 +5,12 @@ from datetime import datetime
 from typing import Dict, Optional, Set
 
 from bson.objectid import ObjectId
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db, get_mongo_db
 from app.models import Note, NotePermission, PermissionLevel, User
-from app.schemas import WSCursorMessage, WSEditMessage, WSMessage
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +239,7 @@ async def websocket_endpoint(
         actual_username = username
 
         if token and (not user_id or user_id == ""):
-            from fastapi import Request, Response
+            from fastapi import Response
             from fastapi.security import HTTPAuthorizationCredentials
 
             from app.auth import get_current_user

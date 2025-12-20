@@ -3,11 +3,11 @@ from datetime import datetime
 from typing import Optional
 
 import stripe
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import get_current_user, get_or_create_anonymous_user
+from app.auth import get_current_user
 from app.database import get_db
 from app.models import Note, Subscription, SubscriptionStatus, User
 from app.schemas import CheckoutSessionRequest, CheckoutSessionResponse, SubscriptionResponse

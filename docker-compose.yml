@@ -98,7 +98,7 @@ services:
       STRIPE_WEBHOOK_SECRET: whsec_your_webhook_secret_here
       FRONTEND_URL: http://localhost:3000
     ports:
-      - "8000:8000"
+      - "8010:8010"
     depends_on:
       postgres:
         condition: service_healthy
@@ -136,8 +136,8 @@ services:
     image: syncpad-frontend:latest
     container_name: syncpad-frontend
     environment:
-      VITE_API_URL: http://localhost:8000
-      VITE_WS_URL: ws://localhost:8000
+      VITE_API_URL: http://localhost:8010
+      VITE_WS_URL: ws://localhost:8010
       VITE_KEYCLOAK_URL: http://localhost:8080
       VITE_KEYCLOAK_REALM: syncpad
       VITE_KEYCLOAK_CLIENT_ID: syncpad-frontend

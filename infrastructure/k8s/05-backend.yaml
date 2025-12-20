@@ -53,7 +53,7 @@ spec:
         image: share-notes-backend:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8000
+        - containerPort: 8010
         envFrom:
         - configMapRef:
             name: backend-config
@@ -69,13 +69,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: 8010
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: 8010
           initialDelaySeconds: 10
           periodSeconds: 5
 ---
@@ -88,8 +88,8 @@ spec:
   selector:
     app: backend
   ports:
-  - port: 8000
-    targetPort: 8000
+  - port: 8010
+    targetPort: 8010
   type: ClusterIP
 ---
 apiVersion: autoscaling/v2

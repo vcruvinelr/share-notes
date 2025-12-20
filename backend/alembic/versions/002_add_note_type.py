@@ -5,9 +5,9 @@ Revises: 001_initial_complete
 Create Date: 2025-12-12
 
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "002"

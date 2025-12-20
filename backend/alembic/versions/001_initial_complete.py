@@ -5,10 +5,12 @@ Revises:
 Create Date: 2025-12-12
 
 """
-from alembic import op
+import uuid
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-import uuid
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "001_initial_complete"

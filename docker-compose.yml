@@ -61,7 +61,7 @@ services:
       - start-dev
       - --import-realm
     ports:
-      - "8090:8090"
+      - "8090:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     depends_on:
@@ -70,7 +70,7 @@ services:
     networks:
       - syncpad-network
     healthcheck:
-      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/8090' || exit 1"]
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/8080' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10

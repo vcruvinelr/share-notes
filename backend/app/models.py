@@ -61,7 +61,7 @@ class Note(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(String, nullable=False)
-    note_type = Column(
+    note_type: Column[NoteType] = Column(
         SQLEnum(NoteType, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=NoteType.STANDARD,
@@ -105,7 +105,7 @@ class NotePermission(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=True,
     )
-    permission_level = Column(
+    permission_level: Column[PermissionLevel] = Column(
         SQLEnum(PermissionLevel), nullable=False, default=PermissionLevel.READ
     )
     granted_at = Column(DateTime, default=datetime.utcnow)
@@ -127,7 +127,7 @@ class Subscription(Base):
     )
     stripe_subscription_id = Column(String, unique=True, nullable=True)
     stripe_price_id = Column(String, nullable=True)
-    status = Column(
+    status: Column[SubscriptionStatus] = Column(
         SQLEnum(SubscriptionStatus),
         nullable=False,
         default=SubscriptionStatus.ACTIVE,

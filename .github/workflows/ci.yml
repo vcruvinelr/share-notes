@@ -100,8 +100,7 @@ jobs:
         run: poetry run flake8 .
 
       - name: Run MyPy (type checking)
-        run: poetry run mypy app/ --ignore-missing-imports
-        continue-on-error: true
+        run: poetry run mypy app/
 
       - name: Check Python syntax
         run: poetry run python -m py_compile app/**/*.py

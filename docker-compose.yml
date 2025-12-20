@@ -61,7 +61,7 @@ services:
       - start-dev
       - --import-realm
     ports:
-      - "8080:8080"
+      - "8090:8090"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     depends_on:
@@ -70,7 +70,7 @@ services:
     networks:
       - syncpad-network
     healthcheck:
-      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/8090' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -87,7 +87,7 @@ services:
     environment:
       DATABASE_URL: postgresql://syncpad:syncpad_dev_password@postgres:5432/syncpad
       MONGODB_URL: mongodb://syncpad:syncpad_dev_password@mongodb:27017/syncpad?authSource=admin
-      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_URL: http://keycloak:8090
       KEYCLOAK_REALM: syncpad
       KEYCLOAK_CLIENT_ID: syncpad-backend
       KEYCLOAK_CLIENT_SECRET: your-client-secret-here
@@ -138,7 +138,7 @@ services:
     environment:
       VITE_API_URL: http://localhost:8010
       VITE_WS_URL: ws://localhost:8010
-      VITE_KEYCLOAK_URL: http://localhost:8080
+      VITE_KEYCLOAK_URL: http://localhost:8090
       VITE_KEYCLOAK_REALM: syncpad
       VITE_KEYCLOAK_CLIENT_ID: syncpad-frontend
     ports:

@@ -11,6 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh:ro
+      - ./database/postgres/create-databases.sh:/docker-entrypoint-initdb.d/create-databases.sh:ro
     networks:
       - syncpad-network
     healthcheck:

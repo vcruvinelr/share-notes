@@ -1,38 +1,36 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 # Start PostgreSQL in the background
-docker-entrypoint.sh postgres &
+/usr/local/bin/docker-entrypoint.sh postgres &
 PG_PID=$!
 
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to start..."
-until pg_isready -U "${POSTGRES_USER:-syncpad}" > /dev/null 2>&1; do
-  sleep 1
+for i in $(seq 1 30); do
+    if pg_isready -U "${POSTGRES_USER:-syncpad}" > /dev/null 2>&1; then
+        break
+    fi
+    sleep 1
 done
 
 echo "PostgreSQL is ready. Checking for required databases..."
 
-# Function to create database if it doesn't exist
-create_database_if_not_exists() {
-    local db_name=$1
-    echo "Checking database '$db_name'..."
-    
-    if psql -U "${POSTGRES_USER:-syncpad}" -lqt | cut -d \| -f 1 | grep -qw "$db_name"; then
-        echo "  Database '$db_name' already exists"
-    else
-        echo "  Creating database '$db_name'..."
-        psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-syncpad}" <<-EOSQL
-            CREATE DATABASE $db_name;
-EOSQL
-        echo "  Database '$db_name' created"
-    fi
-}
-
 # Create additional databases
 if [ -n "${POSTGRES_MULTIPLE_DATABASES:-}" ]; then
-    for db in $(echo "$POSTGRES_MULTIPLE_DATABASES" | tr ',' ' '); do
-        create_database_if_not_exists "$db"
+    for db_name in $(echo "$POSTGRES_MULTIPLE_DATABASES" | tr ',' ' '); do
+        echo "Checking database '$db_name'..."
+        
+        # Check if database exists
+        DB_EXISTS=$(psql -U "${POSTGRES_USER:-syncpad}" -tAc "SELECT 1 FROM pg_database WHERE datname='$db_name'" 2>/dev/null || echo "")
+        
+        if [ "$DB_EXISTS" = "1" ]; then
+            echo "  Database '$db_name' already exists"
+        else
+            echo "  Creating database '$db_name'..."
+            psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-syncpad}" -c "CREATE DATABASE $db_name;"
+            echo "  Database '$db_name' created successfully"
+        fi
     done
 fi
 

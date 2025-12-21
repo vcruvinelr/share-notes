@@ -2,7 +2,7 @@ services:
   # PostgreSQL Database - Keycloak needs its own database
   postgres:
     image: postgres:16-alpine
-    entrypoint: ["/bin/bash", "/docker-entrypoint-wrapper.sh"]
+    entrypoint: ["/bin/sh", "/docker-entrypoint-wrapper.sh"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-syncpad}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

@@ -1,40 +1,46 @@
 #!/bin/sh
 set -e
 
-# Start PostgreSQL in the background
-/usr/local/bin/docker-entrypoint.sh postgres &
-PG_PID=$!
+# Function to create databases
+create_databases() {
+    echo "Checking and creating databases if needed..."
+    
+    # Wait a moment for postgres to fully initialize
+    sleep 2
+    
+    if [ -n "${POSTGRES_MULTIPLE_DATABASES:-}" ]; then
+        for db_name in $(echo "$POSTGRES_MULTIPLE_DATABASES" | tr ',' ' '); do
+            echo "Checking database '$db_name'..."
+            
+            # Try to create database, ignore if exists
+            psql -v ON_ERROR_STOP=0 -U "${POSTGRES_USER:-syncpad}" -tc "SELECT 1 FROM pg_database WHERE datname = '$db_name'" | grep -q 1 || \
+            psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-syncpad}" -c "CREATE DATABASE $db_name;" && \
+            echo "  Database '$db_name' ready"
+        done
+    fi
+    
+    echo "All databases ready"
+}
 
-# Wait for PostgreSQL to be ready
-echo "Waiting for PostgreSQL to start..."
-for i in $(seq 1 30); do
-    if pg_isready -U "${POSTGRES_USER:-syncpad}" > /dev/null 2>&1; then
-        break
+# Run original entrypoint in background
+docker-entrypoint.sh postgres &
+PID=$!
+
+# Wait for PostgreSQL to accept connections
+echo "Waiting for PostgreSQL to be ready..."
+timeout=30
+counter=0
+until pg_isready -U "${POSTGRES_USER:-syncpad}" >/dev/null 2>&1; do
+    counter=$((counter + 1))
+    if [ $counter -gt $timeout ]; then
+        echo "ERROR: PostgreSQL did not become ready in time"
+        exit 1
     fi
     sleep 1
 done
 
-echo "PostgreSQL is ready. Checking for required databases..."
-
 # Create additional databases
-if [ -n "${POSTGRES_MULTIPLE_DATABASES:-}" ]; then
-    for db_name in $(echo "$POSTGRES_MULTIPLE_DATABASES" | tr ',' ' '); do
-        echo "Checking database '$db_name'..."
-        
-        # Check if database exists
-        DB_EXISTS=$(psql -U "${POSTGRES_USER:-syncpad}" -tAc "SELECT 1 FROM pg_database WHERE datname='$db_name'" 2>/dev/null || echo "")
-        
-        if [ "$DB_EXISTS" = "1" ]; then
-            echo "  Database '$db_name' already exists"
-        else
-            echo "  Creating database '$db_name'..."
-            psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-syncpad}" -c "CREATE DATABASE $db_name;"
-            echo "  Database '$db_name' created successfully"
-        fi
-    done
-fi
+create_databases
 
-echo "Database setup complete. PostgreSQL is running."
-
-# Wait for PostgreSQL process
-wait $PG_PID
+# Keep container running
+wait $PID

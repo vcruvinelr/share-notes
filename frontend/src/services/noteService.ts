@@ -16,7 +16,15 @@ export const noteService = {
     is_anonymous: boolean;
   }> => {
     const response = await api.get('/api/notes/me');
-    return response.data;
+    const userData = response.data;
+
+    // Store anonymous user ID in localStorage if user is anonymous
+    if (userData.is_anonymous && userData.id) {
+      localStorage.setItem('anonymousUserId', userData.id);
+      console.log('[NoteService] Stored anonymous user ID:', userData.id);
+    }
+
+    return userData;
   },
 
   // Get all notes

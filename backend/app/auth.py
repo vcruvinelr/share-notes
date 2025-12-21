@@ -12,7 +12,7 @@ from fastapi import (
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from keycloak import KeycloakOpenID
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -50,7 +50,6 @@ async def get_current_user(
     # Priority 1: Check for JWT token first (authenticated users)
     if credentials:
         token = credentials.credentials
-        print("DEBUG: Processing JWT token for authentication")
 
         try:
             # Decode JWT token
@@ -135,13 +134,12 @@ async def get_current_user(
                     except Exception:
                         # Handle duplicate - user exists with different ID
                         await db.rollback()
-                        print("DEBUG: Error, checking by email")
                         # Try to find by email instead
                         if email:
                             result = await db.execute(
                                 select(User).where(
                                     User.email == email,
-                                    User.is_anonymous is False,
+                                    User.is_anonymous.is_(False),
                                 )
                             )
                             user = result.scalar_one_or_none()
@@ -177,7 +175,7 @@ async def get_current_user(
             user_uuid = uuid.UUID(anonymous_user_id)
             result = await db.execute(
                 select(User).where(
-                    User.id == user_uuid, User.is_anonymous is True
+                    User.id == user_uuid, User.is_anonymous.is_(True)
                 )
             )
             user = result.scalar_one_or_none()
@@ -211,18 +209,44 @@ async def get_or_create_anonymous_user(
     Create an anonymous user for unauthenticated access.
     If user_id is provided from frontend, use it to maintain consistency.
     """
+    print(f"DEBUG: get_or_create_anonymous_user called with user_id={user_id}")
+
     if user_id:
+        print(f"DEBUG: Checking for existing anonymous user: {user_id}")
         try:
             user_uuid = uuid.UUID(user_id)
+            print(f"DEBUG: Parsed UUID: {user_uuid}")
+
+            # Debug: Check if we can query any users at all
+            test_result = await db.execute(select(func.count(User.id)))
+            total_users = test_result.scalar()
+            print(f"DEBUG: Total users in database: {total_users}")
+
             # Check if user already exists
+            result = await db.execute(select(User).where(User.id == user_uuid))
+            user_check = result.scalar_one_or_none()
+            is_anon = user_check.is_anonymous if user_check else "N/A"
+            print(
+                f"DEBUG: User with that ID exists: "
+                f"{user_check is not None}, is_anonymous={is_anon}"
+            )
+
             result = await db.execute(
                 select(User).where(
-                    User.id == user_uuid, User.is_anonymous is True
+                    User.id == user_uuid, User.is_anonymous.is_(True)
                 )
             )
             existing_user = result.scalar_one_or_none()
             if existing_user:
+                print(
+                    f"DEBUG: Found existing anonymous user: "
+                    f"{existing_user.id}"
+                )
                 return existing_user
+            print(
+                f"DEBUG: User {user_id} not found in database, "
+                f"will create new user"
+            )
             # Create user with provided ID
             user = User(
                 id=user_uuid,
@@ -253,15 +277,33 @@ async def get_or_create_anonymous_user(
                 user_uuid = uuid.UUID(user_id)
                 result = await db.execute(
                     select(User).where(
-                        User.id == user_uuid, User.is_anonymous is True
+                        User.id == user_uuid, User.is_anonymous.is_(True)
                     )
                 )
                 existing_user = result.scalar_one_or_none()
                 if existing_user:
                     return existing_user
+                # If user doesn't exist, create new anonymous user
+                # with different ID
+                new_user = User(
+                    id=uuid.uuid4(),
+                    is_anonymous=True,
+                )
+                db.add(new_user)
+                await db.commit()
+                await db.refresh(new_user)
+                return new_user
             except (ValueError, AttributeError):
                 pass
-        raise
+        # If no user_id provided or invalid, create new anonymous user
+        new_user = User(
+            id=uuid.uuid4(),
+            is_anonymous=True,
+        )
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        return new_user
 
 
 async def get_current_user_ws(

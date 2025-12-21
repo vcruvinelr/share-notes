@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
 
     # Keycloak
-    KEYCLOAK_URL: str = "http://localhost:8080"
+    KEYCLOAK_URL: str = "http://localhost:8090"
     KEYCLOAK_REALM: str = "syncpad"
     KEYCLOAK_CLIENT_ID: str = "syncpad-backend"
     KEYCLOAK_CLIENT_SECRET: str = "your-client-secret-here"

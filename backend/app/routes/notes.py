@@ -214,7 +214,7 @@ async def list_notes(
                         )
                     )
                 )
-                & (User.is_anonymous is False)
+                & (User.is_anonymous.is_(False))
             )
             .offset(skip)
             .limit(limit)
@@ -251,15 +251,6 @@ async def get_note(
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
 
-    # Enforce separation: anonymous users can't access authenticated user notes and vice versa  # noqa: E501
-    if current_user and note.owner:
-        # Prevent authenticated users from accessing anonymous user notes
-        if not current_user.is_anonymous and note.owner.is_anonymous:
-            raise HTTPException(status_code=403, detail="Access denied")
-        # Prevent anonymous users from accessing authenticated user notes
-        if current_user.is_anonymous and not note.owner.is_anonymous:
-            raise HTTPException(status_code=403, detail="Access denied")
-
     # Check permissions for private notes
     if not note.is_public:
         # If still no user after trying to create anonymous, deny access
@@ -270,6 +261,22 @@ async def get_note(
 
         # Check if user owns the note
         if note.owner_id != current_user.id:
+            # Enforce separation: anonymous users can't access
+            # authenticated user notes and vice versa
+            if current_user and note.owner:
+                # Prevent authenticated users from accessing
+                # anonymous user notes
+                if not current_user.is_anonymous and note.owner.is_anonymous:
+                    raise HTTPException(
+                        status_code=403, detail="Access denied"
+                    )
+                # Prevent anonymous users from accessing
+                # authenticated user notes
+                if current_user.is_anonymous and not note.owner.is_anonymous:
+                    raise HTTPException(
+                        status_code=403, detail="Access denied"
+                    )
+
             # Check if user has permission
             perm_result = await db.execute(
                 select(NotePermission).where(
@@ -337,19 +344,19 @@ async def update_note(
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
 
-    # Enforce separation: anonymous users can't modify authenticated user notes and vice versa  # noqa: E501
-    if current_user and note.owner:
-        if not current_user.is_anonymous and note.owner.is_anonymous:
-            raise HTTPException(status_code=403, detail="Access denied")
-        if current_user.is_anonymous and not note.owner.is_anonymous:
-            raise HTTPException(status_code=403, detail="Access denied")
-
     # Check permissions
     has_write_permission = False
 
     if current_user and note.owner_id == current_user.id:
         has_write_permission = True
     elif current_user:
+        # Enforce separation: anonymous users can't modify
+        # authenticated user notes and vice versa
+        if note.owner:
+            if not current_user.is_anonymous and note.owner.is_anonymous:
+                raise HTTPException(status_code=403, detail="Access denied")
+            if current_user.is_anonymous and not note.owner.is_anonymous:
+                raise HTTPException(status_code=403, detail="Access denied")
         perm_result = await db.execute(
             select(NotePermission).where(
                 NotePermission.note_id == note_id,

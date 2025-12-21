@@ -34,6 +34,8 @@ docker-compose -f docker-compose.local.yml down -v
 
 > 💡 **Note:** The local docker-compose automatically creates the Keycloak database, so you won't encounter database errors.
 
+> ⚠️ **Important:** Keycloak is configured for HTTP (no SSL) in development. The realm uses `sslRequired: "none"` for local development. For production, this should be changed to `"external"` or `"all"`.
+
 ## Manual Development Setup (Alternative)
 
 If you prefer to run services individually without Docker:

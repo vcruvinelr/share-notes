@@ -47,4 +47,4 @@ spec:
           service:
             name: keycloak
             port:
-              number: 8080
+              number: 8090

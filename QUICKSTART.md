@@ -139,7 +139,7 @@ docker-compose ps
 # Ensure ports are not in use
 lsof -i :3000  # Frontend
 lsof -i :8000  # Backend
-lsof -i :8080  # Keycloak
+lsof -i :8090  # Keycloak
 ```
 
 ### Database connection errors

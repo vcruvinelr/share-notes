@@ -136,10 +136,15 @@ Coolify manages the docker-compose lifecycle. You don't need to run these comman
 3. **Keycloak connection:** `KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak`
    - Points to the separate database
 
+4. **Port mapping:** `8090:8080`
+   - Host port 8090 maps to Keycloak's internal port 8080
+   - Access Keycloak at `http://localhost:8090`
+
 **This fix ensures:**
 - ✅ Keycloak database is created automatically
 - ✅ No manual database creation needed
 - ✅ Works in both local and production environments
+- ✅ Keycloak runs on port 8090 (mapped from internal 8080)
 
 ---
 

@@ -68,9 +68,10 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: syncpad
       KC_DB_PASSWORD: syncpad_dev_password
-      KC_HOSTNAME: localhost
+      KC_HOSTNAME_URL: http://localhost:8090
+      KC_HOSTNAME_ADMIN_URL: http://localhost:8090
       KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HOSTNAME_STRICT: "false"
     command:
       - start-dev
       - --import-realm

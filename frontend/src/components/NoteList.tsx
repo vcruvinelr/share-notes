@@ -62,23 +62,30 @@ const NoteList = () => {
 
   useEffect(() => {
     // Always reload notes and limits when component mounts or location changes
-    loadNotes();
-    loadNoteLimit();
+    const initializeUser = async () => {
+      // Update anonymous user ID based on auth state
+      if (!user) {
+        try {
+          // Get or create anonymous user and store the ID
+          const userData = await noteService.getCurrentUser();
+          if (userData.is_anonymous) {
+            setAnonymousUserId(userData.id);
+          }
+        } catch (error) {
+          console.error('Error initializing anonymous user:', error);
+        }
+      } else {
+        // Clear anonymous ID when authenticated
+        setAnonymousUserId(null);
+      }
 
-    // Update anonymous user ID based on auth state
-    if (!user) {
-      const anonId = getAnonymousUserId();
-      setAnonymousUserId(anonId);
+      // Load notes after user is initialized
+      loadNotes();
+      loadNoteLimit();
+    };
 
-      // Verify anonymous user exists in backend
-      noteService.getCurrentUser().catch((error) => {
-        console.error('Error verifying anonymous user:', error);
-      });
-    } else {
-      // Clear anonymous ID when authenticated
-      setAnonymousUserId(null);
-    }
-  }, [user, location.key, getAnonymousUserId]); // Reload when location.key changes (navigation)
+    initializeUser();
+  }, [user, location.key]); // Reload when location.key changes (navigation)
 
   const loadNotes = async () => {
     try {

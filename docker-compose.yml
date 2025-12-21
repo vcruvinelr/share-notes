@@ -1,36 +1,40 @@
 services:
-  # PostgreSQL Database - Keycloak needs its own database
+  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    entrypoint: ["/bin/sh", "/docker-entrypoint-wrapper.sh"]
+    container_name: syncpad-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-syncpad}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-syncpad}
+      POSTGRES_DB: syncpad
+      POSTGRES_USER: syncpad
+      POSTGRES_PASSWORD: syncpad_dev_password
       # Create Keycloak database
       POSTGRES_MULTIPLE_DATABASES: keycloak
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/postgres/docker-entrypoint-wrapper.sh:/docker-entrypoint-wrapper.sh:ro
+      - ./database/postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
     networks:
       - syncpad-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-syncpad} && psql -U ${POSTGRES_USER:-syncpad} -lqt | cut -d \\| -f 1 | grep -qw keycloak"]
+      test: ["CMD-SHELL", "pg_isready -U syncpad"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
-    restart: unless-stopped
+      retries: 5
 
   # MongoDB Database
   mongodb:
     image: mongo:7
+    container_name: syncpad-mongodb
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-syncpad}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DB:-syncpad}
+      MONGO_INITDB_ROOT_USERNAME: syncpad
+      MONGO_INITDB_ROOT_PASSWORD: syncpad_dev_password
+      MONGO_INITDB_DATABASE: syncpad
+    ports:
+      - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+      - ./database/mongodb/init.js:/docker-entrypoint-initdb.d/init.js
     networks:
       - syncpad-network
     healthcheck:
@@ -38,11 +42,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
   # Redis for WebSocket session management
   redis:
     image: redis:7-alpine
+    container_name: syncpad-redis
+    ports:
+      - "6379:6379"
     networks:
       - syncpad-network
     healthcheck:
@@ -50,26 +56,27 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
   # Keycloak Authentication
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
+    container_name: syncpad-keycloak
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: ${POSTGRES_USER:-syncpad}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
-      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
-      KC_PROXY: edge
+      KC_DB_USERNAME: syncpad
+      KC_DB_PASSWORD: syncpad_dev_password
+      KC_HOSTNAME_URL: http://localhost:8090
+      KC_HOSTNAME_ADMIN_URL: http://localhost:8090
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
-      KC_HOSTNAME_STRICT_HTTPS: "false"
     command:
-      - start
+      - start-dev
       - --import-realm
+    ports:
+      - "8090:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     depends_on:
@@ -82,29 +89,31 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 60s
-    restart: unless-stopped
+      start_period: 30s
 
   # Backend API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: production
-    image: syncpad-backend:latest
+      target: development
+    image: syncpad-backend:dev
+    container_name: syncpad-backend
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-syncpad}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-syncpad}
-      MONGODB_URL: mongodb://${MONGO_USER:-syncpad}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-syncpad}?authSource=admin
-      KEYCLOAK_URL: ${KEYCLOAK_URL}
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-syncpad}
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-syncpad-backend}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      DATABASE_URL: postgresql://syncpad:syncpad_dev_password@postgres:5432/syncpad
+      MONGODB_URL: mongodb://syncpad:syncpad_dev_password@mongodb:27017/syncpad?authSource=admin
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: syncpad
+      KEYCLOAK_CLIENT_ID: syncpad-backend
+      KEYCLOAK_CLIENT_SECRET: your-client-secret-here
       REDIS_URL: redis://redis:6379
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      STRIPE_SECRET_KEY: sk_test_your_stripe_secret_key_here
+      STRIPE_PRICE_ID: price_premium_monthly
+      STRIPE_WEBHOOK_SECRET: whsec_your_webhook_secret_here
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "8010:8010"
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,26 +125,39 @@ services:
         condition: service_healthy
     networks:
       - syncpad-network
-    restart: unless-stopped
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini
 
   # Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: production
-    image: syncpad-frontend:latest
+      target: development
+    image: syncpad-frontend:dev
+    container_name: syncpad-frontend
     environment:
-      VITE_API_URL: ${VITE_API_URL}
-      VITE_WS_URL: ${VITE_WS_URL}
-      VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL}
-      VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM:-syncpad}
-      VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID:-syncpad-frontend}
+      VITE_API_URL: http://localhost:8010
+      VITE_WS_URL: ws://localhost:8010
+      VITE_KEYCLOAK_URL: http://localhost:8090
+      VITE_KEYCLOAK_REALM: syncpad
+      VITE_KEYCLOAK_CLIENT_ID: syncpad-frontend
+    ports:
+      - "3000:3000"
     depends_on:
       - backend
     networks:
       - syncpad-network
-    restart: unless-stopped
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+    stdin_open: true
+    tty: true
 
 networks:
   syncpad-network:

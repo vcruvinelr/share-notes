@@ -4,24 +4,35 @@ A scalable, real-time collaborative note-taking application built with modern te
 
 ## 🚀 Quick Start
 
+### Local Development
+
 ```bash
-# Clone and setup
+# Clone the repository
 git clone <repository-url>
 cd share-notes
 
-# Run automated setup
-./setup.sh
-
-# Start all services
-docker-compose up -d
+# Start all services with Docker Compose
+docker-compose -f docker-compose.local.yml up -d
 
 # Access the application
 # Frontend: http://localhost:3000
-# Backend API: http://localhost:8000
-# Keycloak: http://localhost:8080
+# Backend API: http://localhost:8010
+# API Docs: http://localhost:8010/docs
+# Keycloak: http://localhost:8090
 ```
 
-For detailed setup instructions, see [QUICKSTART.md](./QUICKSTART.md).
+### Production Deployment (Coolify)
+
+```bash
+# Use the Coolify-specific docker-compose file
+# In Coolify, set Docker Compose Location to:
+/docker-compose.coolify.yml
+```
+
+**For detailed instructions:**
+- Local development: See [DEVELOPMENT.md](./DEVELOPMENT.md)
+- Coolify deployment: See [COOLIFY_DEPLOYMENT.md](./COOLIFY_DEPLOYMENT.md)
+- Quick setup: See [QUICKSTART.md](./QUICKSTART.md)
 
 ## 📋 Architecture
 

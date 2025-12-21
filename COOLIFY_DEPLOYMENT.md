@@ -2,6 +2,24 @@
 
 Complete guide to deploy ShareNotes to Hetzner + Coolify with automatic GitHub Actions deployment.
 
+## Important: Docker Compose Files
+
+This project has **two separate docker-compose files**:
+
+- **`docker-compose.coolify.yml`** - For production deployment on Coolify
+  - Uses environment variables for configuration
+  - Production-optimized settings
+  - **Fixes Keycloak database issue** by automatically creating separate Keycloak database
+  - Proper restart policies and health checks
+
+- **`docker-compose.local.yml`** - For local development
+  - Hardcoded dev credentials
+  - Volume mounts for hot-reload
+  - Development-optimized settings
+  - Port mappings for direct access
+
+**For Coolify deployment, always use `docker-compose.coolify.yml`**
+
 ## Prerequisites
 
 - GitHub account with repository access
@@ -62,7 +80,7 @@ Complete guide to deploy ShareNotes to Hetzner + Coolify with automatic GitHub A
    - Authorize access
 4. Select your repository: `your-username/share-notes`
 5. Branch: `main`
-6. Docker Compose Location: `/docker-compose.yml`
+6. **Docker Compose Location: `/docker-compose.coolify.yml`** ⚠️ Important: Use the Coolify-specific file
 7. Click "**Continue**"
 
 ### 3.3 Configure Services
@@ -114,36 +132,60 @@ Coolify will parse your docker-compose.yml and detect all services:
 
 ### 3.4 Update Environment Variables
 
+**IMPORTANT:** The Keycloak database issue is fixed in `docker-compose.coolify.yml` by automatically creating a separate Keycloak database during PostgreSQL initialization.
+
 In Coolify, for each service, set proper environment variables:
 
-**Backend:**
+**PostgreSQL Environment Variables:**
 ```env
-DATABASE_URL=postgresql://syncpad:syncpad_dev_password@postgres:5432/syncpad
-MONGODB_URI=mongodb://syncpad:syncpad_dev_password@mongodb:27017/syncpad?authSource=admin
+POSTGRES_USER=syncpad
+POSTGRES_PASSWORD=<generate-secure-password>
+POSTGRES_DB=syncpad
+POSTGRES_MULTIPLE_DATABASES=keycloak
+```
+
+**MongoDB Environment Variables:**
+```env
+MONGO_USER=syncpad
+MONGO_PASSWORD=<generate-secure-password>
+MONGO_DB=syncpad
+```
+
+**Keycloak Environment Variables:**
+```env
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=<generate-secure-password>
+KEYCLOAK_HOSTNAME=auth.yourdomain.com
+KC_DB_USERNAME=syncpad
+KC_DB_PASSWORD=<same-as-postgres-password>
+```
+
+**Backend Environment Variables:**
+```env
+DATABASE_URL=postgresql://syncpad:<postgres-password>@postgres:5432/syncpad
+MONGODB_URL=mongodb://syncpad:<mongo-password>@mongodb:27017/syncpad?authSource=admin
 REDIS_URL=redis://redis:6379
 KEYCLOAK_URL=https://auth.yourdomain.com
-KEYCLOAK_REALM=sharenotes
-KEYCLOAK_CLIENT_ID=sharenotes-client
-SECRET_KEY=<generate-secure-random-key>
-ENVIRONMENT=production
+KEYCLOAK_REALM=syncpad
+KEYCLOAK_CLIENT_ID=syncpad-backend
+KEYCLOAK_CLIENT_SECRET=<from-keycloak-admin>
+CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+STRIPE_SECRET_KEY=<your-stripe-key>
+STRIPE_PRICE_ID=<your-price-id>
+STRIPE_WEBHOOK_SECRET=<your-webhook-secret>
+FRONTEND_URL=https://yourdomain.com
 ```
 
 **Frontend (Build Args):**
 ```env
 VITE_API_URL=https://api.yourdomain.com
+VITE_WS_URL=wss://api.yourdomain.com
 VITE_KEYCLOAK_URL=https://auth.yourdomain.com
-VITE_KEYCLOAK_REALM=sharenotes
-VITE_KEYCLOAK_CLIENT_ID=sharenotes-client
+VITE_KEYCLOAK_REALM=syncpad
+VITE_KEYCLOAK_CLIENT_ID=syncpad-frontend
 ```
 
-**Keycloak:**
-```env
-KC_HOSTNAME=auth.yourdomain.com
-KC_DB_URL_HOST=postgres
-KC_DB_URL_DATABASE=syncpad
-KC_DB_USERNAME=syncpad
-KC_DB_PASSWORD=syncpad_dev_password
-```
+> 💡 **Tip:** Copy `.env.coolify.example` and fill in your values, then paste into Coolify's environment variables section.
 
 ## Step 4: Setup GitHub Actions Auto-Deployment
 

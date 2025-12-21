@@ -1,6 +1,42 @@
 # Share Notes - Development Guide
 
-## Local Development Setup
+## Quick Start with Docker Compose
+
+The easiest way to run the entire stack locally is using Docker Compose:
+
+```bash
+# Start all services (PostgreSQL, MongoDB, Redis, Keycloak, Backend, Frontend)
+docker-compose -f docker-compose.local.yml up -d
+
+# View logs
+docker-compose -f docker-compose.local.yml logs -f
+
+# Stop all services
+docker-compose -f docker-compose.local.yml down
+
+# Stop and remove volumes (fresh start)
+docker-compose -f docker-compose.local.yml down -v
+```
+
+**Services will be available at:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8010
+- API Docs: http://localhost:8010/docs
+- Keycloak: http://localhost:8090
+- PostgreSQL: localhost:5432
+- MongoDB: localhost:27017
+- Redis: localhost:6379
+
+**Default credentials:**
+- Keycloak Admin: `admin` / `admin`
+- PostgreSQL: `syncpad` / `syncpad_dev_password`
+- MongoDB: `syncpad` / `syncpad_dev_password`
+
+> 💡 **Note:** The local docker-compose automatically creates the Keycloak database, so you won't encounter database errors.
+
+## Manual Development Setup (Alternative)
+
+If you prefer to run services individually without Docker:
 
 ### Backend Development
 
